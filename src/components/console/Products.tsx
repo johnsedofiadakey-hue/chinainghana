@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { addDoc, collection, doc, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
-import { Boxes, Copy, Eye, EyeOff, Package, Pencil, Plus, Search } from "lucide-react";
+import { Boxes, Copy, Eye, EyeOff, Gift, Package, Pencil, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, EmptyState, PageHeader, Spinner } from "@/components/ui/misc";
 import { Modal } from "@/components/ui/modal";
@@ -221,7 +221,9 @@ function ProductsInner({ fixedBranchId }: { fixedBranchId: string | null }) {
                       <span className="flex flex-wrap items-center gap-1.5">
                         <span className="truncate font-medium text-navy-900">{p.name}</span>
                         {giftStatus(p.freeGift) && giftStatus(p.freeGift) !== "ended" && (
-                          <Badge tone={giftStatus(p.freeGift) === "active" ? "alert" : "neutral"}>🎁 {p.freeGift!.name}</Badge>
+                          <Badge tone={giftStatus(p.freeGift) === "active" ? "alert" : "neutral"}>
+                            <Gift className="size-3" aria-hidden /> {p.freeGift!.name}
+                          </Badge>
                         )}
                         {p.tags?.includes("hot") && <Badge tone="sun">Hot</Badge>}
                         {p.tags?.includes("new") && <Badge tone="navy">New</Badge>}

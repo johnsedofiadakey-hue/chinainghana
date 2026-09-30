@@ -327,7 +327,7 @@ export function ReportsPanel({ fixedBranchId }: { fixedBranchId: string | null }
           {loading ? (
             <Spinner />
           ) : slowMovers.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-ink-soft">Everything in stock has sold at least once. 🎉</p>
+            <p className="px-5 py-6 text-sm text-ink-soft">Everything in stock has sold at least once.</p>
           ) : (
             <ul className="mt-2 divide-y divide-line">
               {slowMovers.slice(0, 10).map(({ p, value }) => (

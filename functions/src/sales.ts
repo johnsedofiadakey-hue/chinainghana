@@ -40,9 +40,9 @@ export function receiptText(args: {
     minute: "2-digit",
     timeZone: "Africa/Accra",
   });
-  const lines = args.items.map((l) => `• ${l.code} ${l.name}\n   ${describeQty(l)} × ${ghs(l.unitPrice)} = ${ghs(l.lineTotal)}${l.gift ? `\n   🎁 FREE: ${l.gift}` : ""}`);
+  const lines = args.items.map((l) => `• ${l.code} ${l.name}\n   ${describeQty(l)} × ${ghs(l.unitPrice)} = ${ghs(l.lineTotal)}${l.gift ? `\n   FREE GIFT: ${l.gift}` : ""}`);
   return [
-    `✅ *RECEIPT #${args.receiptNo}*`,
+    `*RECEIPT #${args.receiptNo}*`,
     `China-in-Ghana · ${args.branchName}`,
     when,
     "──────────────",

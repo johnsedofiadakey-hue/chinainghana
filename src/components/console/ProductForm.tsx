@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { addDoc, collection, doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
-import { Camera, Gift, Loader2 } from "lucide-react";
+import { Camera, Flame, Gift, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea, Toggle } from "@/components/ui/field";
 import { Modal } from "@/components/ui/modal";
@@ -325,7 +325,11 @@ export function ProductForm({
             <Toggle
               checked={f.hasGift}
               onChange={(v) => set("hasGift", v)}
-              label="🎁 Comes with a free gift"
+              label={
+                <span className="inline-flex items-center gap-1.5">
+                  <Gift className="size-4 text-brand-orange" aria-hidden /> Comes with a free gift
+                </span>
+              }
               description={`Shown on the product and added to the WhatsApp order: 1 gift per ${Number(f.qtyPerBox) === 1 ? (f.unitLabel || "unit") : "box"}.`}
             />
             {f.hasGift && (
@@ -372,7 +376,11 @@ export function ProductForm({
 
           <div className="grid gap-2 sm:grid-cols-3">
             <Toggle checked={f.visible} onChange={(v) => set("visible", v)} label="Show in shop" />
-            <Toggle checked={f.hot} onChange={(v) => set("hot", v)} label="🔥 Hot deal" />
+            <Toggle checked={f.hot} onChange={(v) => set("hot", v)} label={
+                <span className="inline-flex items-center gap-1.5">
+                  <Flame className="size-4 text-brand-orange" aria-hidden /> Hot deal
+                </span>
+              } />
             <Toggle checked={f.isNew} onChange={(v) => set("isNew", v)} label="New arrival" />
           </div>
           {product && <p className="text-[13px] text-ink-soft">To change stock, use the Stock button on the product list.</p>}

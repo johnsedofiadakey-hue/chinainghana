@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { collection, query, where } from "firebase/firestore";
-import { ArrowLeft, CheckCircle2, Copy, ExternalLink, MessageCircle, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Copy, ExternalLink, Gift, MessageCircle, Plus, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { Card, EmptyState, PageHeader } from "@/components/ui/misc";
@@ -174,7 +174,7 @@ export function NewSale({ fixedBranchId, basePath }: { fixedBranchId: string | n
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{p.name}</span>
                     <span className="block text-[12px] text-ink-soft">
-                      {p.code} · {ghs(p.boxPrice)} {priceSuffix(p.qtyPerBox)}{giftStatus(p.freeGift) === "active" ? " · 🎁" : ""} · {p.stockPieces > 0 ? stockLabel(p.stockPieces, p.qtyPerBox, p.unitLabel) : "out of stock"}
+                      {p.code} · {ghs(p.boxPrice)} {priceSuffix(p.qtyPerBox)}{giftStatus(p.freeGift) === "active" ? " · free gift" : ""} · {p.stockPieces > 0 ? stockLabel(p.stockPieces, p.qtyPerBox, p.unitLabel) : "out of stock"}
                     </span>
                   </span>
                   <Plus className="size-5 text-navy-600" />
@@ -203,8 +203,8 @@ export function NewSale({ fixedBranchId, basePath }: { fixedBranchId: string | n
                           {p.code} · in stock: {stockLabel(p.stockPieces, p.qtyPerBox, p.unitLabel) || "0"}
                         </p>
                         {l.unit === "box" && giftStatus(p.freeGift) === "active" && (
-                          <p className="text-[12px] font-semibold text-sun-ink">
-                            🎁 Give {l.qty > 1 ? `${l.qty} × ` : ""}FREE {p.freeGift!.name}
+                          <p className="flex items-center gap-1 text-[12px] font-semibold text-sun-ink">
+                            <Gift className="size-3.5 shrink-0" aria-hidden /> Give {l.qty > 1 ? `${l.qty} × ` : ""}FREE {p.freeGift!.name}
                           </p>
                         )}
                       </div>

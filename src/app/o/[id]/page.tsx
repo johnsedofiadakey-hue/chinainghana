@@ -3,7 +3,7 @@
 import { use, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, Clock, MessageCircle, Package, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Gift, MessageCircle, Package, XCircle } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Card, EmptyState, Spinner } from "@/components/ui/misc";
@@ -127,7 +127,11 @@ export default function OrderPage(props: { params: Promise<{ id: string }> }) {
                   <p className="text-[12px] text-ink-soft">
                     {l.code} · {lineQty(l)} × {ghs(l.unitPrice)}
                   </p>
-                  {l.gift && <p className="mt-0.5 text-[12px] font-semibold text-sun-ink">🎁 FREE: {l.gift}</p>}
+                  {l.gift && (
+                    <p className="mt-0.5 flex items-center gap-1 text-[12px] font-semibold text-sun-ink">
+                      <Gift className="size-3.5 shrink-0" aria-hidden /> FREE: {l.gift}
+                    </p>
+                  )}
                 </div>
                 <p className="font-display font-bold">{ghs(l.lineTotal)}</p>
               </li>

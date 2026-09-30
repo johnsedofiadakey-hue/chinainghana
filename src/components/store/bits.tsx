@@ -143,7 +143,7 @@ export function UnitToggle({
   );
 }
 
-/** "🎁 FREE Blender" ribbon for product cards. Hidden when the promo has ended. */
+/** "FREE Blender" ribbon for product cards. Hidden when the promo has ended. */
 export function GiftTag({ gift, className }: { gift: FreeGift | null | undefined; className?: string }) {
   const status = giftStatus(gift);
   if (!gift || !status || status === "ended") return null;

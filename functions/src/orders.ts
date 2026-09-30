@@ -52,10 +52,10 @@ function orderMessage(args: {
   const phoneLocal = args.customer.phone.replace(/^\+233/, "0");
   const who = [args.customer.name, phoneLocal, args.customer.businessName].filter(Boolean).join(" · ");
   const lines = args.items.map(
-    (l) => `• ${l.code} ${l.name}\n   ${describeQty(l)} × ${ghs(l.unitPrice)} = ${ghs(l.lineTotal)}${l.gift ? `\n   🎁 FREE: ${l.gift}` : ""}`,
+    (l) => `• ${l.code} ${l.name}\n   ${describeQty(l)} × ${ghs(l.unitPrice)} = ${ghs(l.lineTotal)}${l.gift ? `\n   FREE GIFT: ${l.gift}` : ""}`,
   );
   return [
-    `🧾 *NEW ORDER #${args.orderNo}*`,
+    `*NEW ORDER #${args.orderNo}*`,
     `Branch: ${args.branchName}`,
     `Customer: ${who}`,
     "──────────────",

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { collection, query, where } from "firebase/firestore";
-import { ChevronDown, Info, Lock, MapPin, PackageSearch, Search, ShoppingBag, X } from "lucide-react";
+import { ChevronDown, Flame, Gift, Info, Lock, MapPin, PackageSearch, Search, ShoppingBag, X } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Badge, EmptyState, Spinner } from "@/components/ui/misc";
@@ -429,8 +429,12 @@ function ProductCard({
           className={cn("aspect-square w-full transition duration-300 group-hover:scale-[1.03]", avail === "out" && "opacity-50 grayscale")}
         />
         <span className="absolute left-2 top-2 flex flex-col items-start gap-1">
-          {giftStatus(p.freeGift) === "active" && <Badge tone="alert">🎁 Free gift</Badge>}
-          {p.tags?.includes("hot") && <Badge tone="sun">🔥 Hot</Badge>}
+          {giftStatus(p.freeGift) === "active" && <Badge tone="alert">
+              <Gift className="size-3" aria-hidden /> Free gift
+            </Badge>}
+          {p.tags?.includes("hot") && <Badge tone="sun">
+              <Flame className="size-3" aria-hidden /> Hot
+            </Badge>}
           {p.tags?.includes("new") && <Badge tone="orange">New</Badge>}
         </span>
       </button>

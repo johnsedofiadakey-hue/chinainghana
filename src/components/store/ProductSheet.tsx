@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { Download, Share2, ShoppingBag, Store } from "lucide-react";
+import { Download, Flame, Gift, Share2, ShoppingBag, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/misc";
 import { Modal } from "@/components/ui/modal";
@@ -150,8 +150,12 @@ export function ProductSheet({
           <div>
             {/* Badges sit here, not on the photo, so they never cover a flyer's text. */}
             <div className="flex flex-wrap items-center gap-2">
-              {giftStatus(product.freeGift) === "active" && <Badge tone="alert">🎁 Free gift</Badge>}
-              {product.tags?.includes("hot") && <Badge tone="sun">🔥 Hot</Badge>}
+              {giftStatus(product.freeGift) === "active" && <Badge tone="alert">
+                  <Gift className="size-3" aria-hidden /> Free gift
+                </Badge>}
+              {product.tags?.includes("hot") && <Badge tone="sun">
+                  <Flame className="size-3" aria-hidden /> Hot
+                </Badge>}
               {product.tags?.includes("new") && <Badge tone="orange">New</Badge>}
               <AvailabilityBadge
                 value={avail}

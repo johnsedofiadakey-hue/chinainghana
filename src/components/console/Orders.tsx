@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle2, Clock, MessageCircle, Search, ShoppingCart, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Gift, MessageCircle, Search, ShoppingCart, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { Badge, Card, EmptyState, PageHeader, Spinner } from "@/components/ui/misc";
@@ -265,8 +265,11 @@ function OrderDetail({ order, onClose }: { order: Order | null; onClose: () => v
         </div>
         {order.note && <p className="rounded-xl bg-sun-soft p-3 text-sm text-sun-ink">Note: {order.note}</p>}
         {open && order.items.some((l) => l.gift) && (
-          <p className="rounded-xl bg-brand-orange-soft p-3 text-sm font-medium text-brand-orange-dark">
-            🎁 Remember to hand over the free gift{order.items.filter((l) => l.gift).length > 1 ? "s" : ""}: {order.items.filter((l) => l.gift).map((l) => l.gift).join(", ")}
+          <p className="flex items-start gap-2 rounded-xl bg-brand-orange-soft p-3 text-sm font-medium text-brand-orange-dark">
+            <Gift className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <span>
+              Remember to hand over the free gift{order.items.filter((l) => l.gift).length > 1 ? "s" : ""}: {order.items.filter((l) => l.gift).map((l) => l.gift).join(", ")}
+            </span>
           </p>
         )}
 
@@ -280,7 +283,11 @@ function OrderDetail({ order, onClose }: { order: Order | null; onClose: () => v
                   {l.code} · {lineQty(l)} × {ghs(l.unitPrice)}
                   {l.pieces !== l.qty && ` · ${l.pieces} pcs`}
                 </p>
-                {l.gift && <p className="mt-0.5 text-[12px] font-semibold text-sun-ink">🎁 FREE: {l.gift}</p>}
+                {l.gift && (
+                  <p className="mt-0.5 flex items-center gap-1 text-[12px] font-semibold text-sun-ink">
+                    <Gift className="size-3.5 shrink-0" aria-hidden /> FREE: {l.gift}
+                  </p>
+                )}
               </div>
               <p className="font-display font-bold">{ghs(l.lineTotal)}</p>
             </li>

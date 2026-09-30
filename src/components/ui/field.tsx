@@ -74,7 +74,7 @@ export function Toggle({
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
-  label: string;
+  label: React.ReactNode;
   description?: string;
 }) {
   return (

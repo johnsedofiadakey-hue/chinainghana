@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, MessageCircle, Plus, Receipt, Search, Ban } from "lucide-react";
+import { Ban, ExternalLink, Gift, MessageCircle, Plus, Receipt, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { Badge, Card, EmptyState, PageHeader, Spinner, StatCard } from "@/components/ui/misc";
@@ -129,7 +129,7 @@ export function SalesPanel({ fixedBranchId, basePath }: { fixedBranchId: string 
                       {s.voided && <Badge tone="alert">Voided</Badge>}
                     </span>
                     <span className="block truncate text-[13px] text-ink-soft">
-                      {s.items.map((i) => `${lineQty(i)} ${i.name}${i.gift ? " 🎁" : ""}`).join(", ")}
+                      {s.items.map((i) => `${lineQty(i)} ${i.name}${i.gift ? " + free gift" : ""}`).join(", ")}
                       {!fixedBranchId && scope === "all" && ` · ${byId.get(s.branchId)?.name ?? s.branchName}`}
                     </span>
                   </span>
@@ -159,9 +159,9 @@ function SaleDetail({ sale, onClose }: { sale: Sale | null; onClose: () => void 
 
   const receiptLink = typeof window !== "undefined" ? `${window.location.origin}/r/${sale.id}` : `/r/${sale.id}`;
   const receiptMsg = [
-    `✅ *RECEIPT #${sale.receiptNo}*`,
+    `*RECEIPT #${sale.receiptNo}*`,
     `China-in-Ghana · ${sale.branchName}`,
-    ...sale.items.map((l) => `• ${l.code} ${l.name} — ${lineQty(l)} = ${ghs(l.lineTotal)}${l.gift ? `\n   🎁 FREE: ${l.gift}` : ""}`),
+    ...sale.items.map((l) => `• ${l.code} ${l.name} — ${lineQty(l)} = ${ghs(l.lineTotal)}${l.gift ? `\n   FREE GIFT: ${l.gift}` : ""}`),
     `*TOTAL: ${ghs(sale.total)}*`,
     "",
     "Thank you for shopping with us!",
@@ -252,7 +252,11 @@ function SaleDetail({ sale, onClose }: { sale: Sale | null; onClose: () => void 
                 <span className="text-[12px] text-ink-soft">
                   {l.code} · {lineQty(l)} × {ghs(l.unitPrice)}
                 </span>
-                {l.gift && <span className="block text-[12px] font-semibold text-sun-ink">🎁 FREE: {l.gift}</span>}
+                {l.gift && (
+                  <span className="flex items-center gap-1 text-[12px] font-semibold text-sun-ink">
+                    <Gift className="size-3.5 shrink-0" aria-hidden /> FREE: {l.gift}
+                  </span>
+                )}
               </span>
               <span className="font-display font-bold">{ghs(l.lineTotal)}</span>
             </li>

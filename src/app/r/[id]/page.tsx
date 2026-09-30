@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { Printer } from "lucide-react";
+import { Gift, Printer } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Card, EmptyState, Spinner } from "@/components/ui/misc";
@@ -46,7 +46,11 @@ export default function ReceiptPage(props: { params: Promise<{ id: string }> }) 
                 <span className="text-[12px] text-ink-soft">
                   {l.code} · {lineQty(l)} × {ghs(l.unitPrice)}
                 </span>
-                {l.gift && <span className="block text-[12px] font-semibold text-sun-ink">🎁 FREE: {l.gift}</span>}
+                {l.gift && (
+                  <span className="flex items-center gap-1 text-[12px] font-semibold text-sun-ink">
+                    <Gift className="size-3.5 shrink-0" aria-hidden /> FREE: {l.gift}
+                  </span>
+                )}
               </span>
               <span className="font-display font-bold">{ghs(l.lineTotal)}</span>
             </li>

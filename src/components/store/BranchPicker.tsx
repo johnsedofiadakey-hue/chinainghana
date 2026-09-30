@@ -121,7 +121,7 @@ export function BranchPicker({
                     <Navigation className="size-3.5" /> Directions
                   </a>
                   <a
-                    href={waLink(b.whatsapp, `Hello ${b.name} branch 👋`)}
+                    href={waLink(b.whatsapp, `Hello ${b.name} branch`)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-white px-2.5 text-[13px] font-medium text-[#128c4a] ring-1 ring-inset ring-line hover:bg-navy-50"
