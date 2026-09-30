@@ -1,6 +1,6 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { z } from "zod";
-import { applyStockChange, assertCanManage, audit, db, getLowStockDefault, parse, ProductDoc, REGION, requireStaff } from "./shared";
+import { applyStockChange, assertCanManage, audit, db, getLowStockDefault, parse, ProductDoc, requireStaff, CALLABLE } from "./shared";
 
 const adjustStockSchema = z.object({
   productId: z.string().min(1),
@@ -16,7 +16,7 @@ const adjustStockSchema = z.object({
  *  - adjust:  adds a signed correction (reason required)
  *  - count:   sets stock to the counted boxes + pieces
  */
-export const adjustStock = onCall({ region: REGION }, async (req) => {
+export const adjustStock = onCall({ ...CALLABLE }, async (req) => {
   const caller = requireStaff(req);
   const input = parse(adjustStockSchema, req.data);
 

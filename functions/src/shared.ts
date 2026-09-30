@@ -12,6 +12,13 @@ export const auth = getAuth();
 export { FieldValue, Timestamp };
 
 export const REGION = "europe-west1";
+
+/**
+ * Options for every callable. `invoker: "public"` lets browsers reach the function at all
+ * (Cloud Run IAM); each function still checks the caller's sign-in and role itself.
+ * Declared explicitly so every deploy re-applies it, not just the first create.
+ */
+export const CALLABLE = { region: REGION, invoker: "public" } as const;
 export const STAFF_EMAIL_DOMAIN = "cig.staff";
 
 // ---------------------------------------------------------------------------

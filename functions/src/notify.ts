@@ -4,7 +4,7 @@ import { onDocumentCreated, onDocumentWritten } from "firebase-functions/v2/fire
 import { onCall } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { z } from "zod";
-import { db, FieldValue, ghs, parse, REGION, requireStaff } from "./shared";
+import { db, FieldValue, ghs, parse, REGION, requireStaff, CALLABLE } from "./shared";
 
 // ---------------------------------------------------------------------------
 // Push tokens
@@ -13,7 +13,7 @@ import { db, FieldValue, ghs, parse, REGION, requireStaff } from "./shared";
 const tokenSchema = z.object({ token: z.string().min(20).max(4096), enabled: z.boolean() });
 
 /** Staff: saves (or removes) this device's push token on their profile. */
-export const setPushToken = onCall({ region: REGION }, async (req) => {
+export const setPushToken = onCall({ ...CALLABLE }, async (req) => {
   const caller = requireStaff(req);
   const input = parse(tokenSchema, req.data);
   await db

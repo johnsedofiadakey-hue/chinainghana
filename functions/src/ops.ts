@@ -10,10 +10,10 @@ import {
   getLowStockDefault,
   parse,
   ProductDoc,
-  REGION,
   requireAdmin,
   requireStaff,
   summaryRef,
+  CALLABLE,
 } from "./shared";
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a date like 2026-09-30.");
@@ -35,7 +35,7 @@ const closeDaySchema = z.object({
 });
 
 /** Manager (or admin): closes a branch's business day with an optional cash count and note. */
-export const closeDay = onCall({ region: REGION }, async (req) => {
+export const closeDay = onCall({ ...CALLABLE }, async (req) => {
   const caller = requireStaff(req);
   const input = parse(closeDaySchema, req.data);
   assertCanManage(caller, input.branchId);
@@ -78,7 +78,7 @@ export const closeDay = onCall({ region: REGION }, async (req) => {
 const reopenDaySchema = z.object({ branchId: z.string().min(1), date: dateSchema });
 
 /** Admin: reopens a closed day (e.g. to let a manager fix a mistake and close again). */
-export const reopenDay = onCall({ region: REGION }, async (req) => {
+export const reopenDay = onCall({ ...CALLABLE }, async (req) => {
   const caller = requireAdmin(req);
   const input = parse(reopenDaySchema, req.data);
   const ref = summaryRef(input.branchId, input.date);
@@ -117,7 +117,7 @@ interface TakeLine {
  * Manager: submits a count sheet. Expected stock is read on the server at
  * submission time; the Admin then approves (posts the differences) or rejects.
  */
-export const submitStockTake = onCall({ region: REGION }, async (req) => {
+export const submitStockTake = onCall({ ...CALLABLE }, async (req) => {
   const caller = requireStaff(req);
   const input = parse(submitStockTakeSchema, req.data);
   assertCanManage(caller, input.branchId);
@@ -187,7 +187,7 @@ const reviewStockTakeSchema = z.object({
  * made between counting and approval are not lost. Applied in chunks so
  * large counts stay within transaction limits; a retry resumes where it stopped.
  */
-export const reviewStockTake = onCall({ region: REGION, timeoutSeconds: 300 }, async (req) => {
+export const reviewStockTake = onCall({ ...CALLABLE, timeoutSeconds: 300 }, async (req) => {
   const caller = requireAdmin(req);
   const input = parse(reviewStockTakeSchema, req.data);
   const ref = db.collection("stockTakes").doc(input.id);
@@ -292,7 +292,7 @@ function slug(s: string): string {
  * on product code. Stock columns, when filled in, set stock through the
  * ledger like a stock count.
  */
-export const importProducts = onCall({ region: REGION, timeoutSeconds: 300 }, async (req) => {
+export const importProducts = onCall({ ...CALLABLE, timeoutSeconds: 300 }, async (req) => {
   const caller = requireStaff(req);
   const input = parse(importSchema, req.data);
   assertCanManage(caller, input.branchId);

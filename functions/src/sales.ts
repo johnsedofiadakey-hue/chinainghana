@@ -17,11 +17,11 @@ import {
   pad,
   parse,
   ProductDoc,
-  REGION,
   requireStaff,
   siteUrl,
   summaryRef,
   waLink,
+  CALLABLE,
 } from "./shared";
 
 export function receiptText(args: {
@@ -71,7 +71,7 @@ const recordSaleSchema = z.object({
 });
 
 /** Staff: records a walk-in sale, deducts stock and returns a WhatsApp receipt link. */
-export const recordSale = onCall({ region: REGION }, async (req) => {
+export const recordSale = onCall({ ...CALLABLE }, async (req) => {
   const caller = requireStaff(req);
   const input = parse(recordSaleSchema, req.data);
   assertCanManage(caller, input.branchId);
@@ -182,7 +182,7 @@ const voidSaleSchema = z.object({
 });
 
 /** Staff: voids a sale, returns the stock, and logs it for the Admin. */
-export const voidSale = onCall({ region: REGION }, async (req) => {
+export const voidSale = onCall({ ...CALLABLE }, async (req) => {
   const caller = requireStaff(req);
   const input = parse(voidSaleSchema, req.data);
 

@@ -1,6 +1,6 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { z } from "zod";
-import { audit, auth, db, FieldValue, parse, REGION, requireAdmin, requireSuper, STAFF_EMAIL_DOMAIN } from "./shared";
+import { audit, auth, db, FieldValue, parse, requireAdmin, requireSuper, STAFF_EMAIL_DOMAIN, CALLABLE } from "./shared";
 
 const usernameSchema = z
   .string()
@@ -19,7 +19,7 @@ const createStaffSchema = z.object({
 });
 
 /** Admin creates a branch manager account (username + temporary password). */
-export const createStaff = onCall({ region: REGION }, async (req) => {
+export const createStaff = onCall({ ...CALLABLE }, async (req) => {
   const caller = requireAdmin(req);
   const input = parse(createStaffSchema, req.data);
 
@@ -64,7 +64,7 @@ const updateStaffSchema = z.object({
 });
 
 /** Admin edits, suspends/reactivates, reassigns or resets the password of a manager. */
-export const updateStaff = onCall({ region: REGION }, async (req) => {
+export const updateStaff = onCall({ ...CALLABLE }, async (req) => {
   const caller = requireAdmin(req);
   const input = parse(updateStaffSchema, req.data);
 
@@ -121,7 +121,7 @@ const setAdminSchema = z.object({
  * Super Admin only: creates the client's Admin login, or restores it (new
  * temporary password, re-enabled) if the username already exists.
  */
-export const setAdminAccount = onCall({ region: REGION }, async (req) => {
+export const setAdminAccount = onCall({ ...CALLABLE }, async (req) => {
   const caller = requireSuper(req);
   const input = parse(setAdminSchema, req.data);
   const email = `${input.username}@${STAFF_EMAIL_DOMAIN}`;

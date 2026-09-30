@@ -1,6 +1,6 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { z } from "zod";
-import { audit, db, FieldValue, parse, phoneSchema, REGION, requireAdmin } from "./shared";
+import { audit, db, FieldValue, parse, phoneSchema, requireAdmin, CALLABLE } from "./shared";
 
 // Ghana bounding box (with a small margin).
 const GH_BOUNDS = { minLat: 4.5, maxLat: 11.3, minLng: -3.4, maxLng: 1.3 };
@@ -36,7 +36,7 @@ function baseCode(name: string): string {
  * licence limit. When the limit is reached it fails with details the UI uses
  * to show the one-time unlock message.
  */
-export const createBranch = onCall({ region: REGION }, async (req) => {
+export const createBranch = onCall({ ...CALLABLE }, async (req) => {
   const caller = requireAdmin(req);
   const input = parse(createBranchSchema, req.data);
 

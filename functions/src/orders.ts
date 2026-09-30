@@ -17,12 +17,12 @@ import {
   parse,
   phoneSchema,
   ProductDoc,
-  REGION,
   requireStaff,
   siteUrl,
   summaryRef,
   Timestamp,
   waLink,
+  CALLABLE,
 } from "./shared";
 import { receiptText } from "./sales";
 
@@ -76,7 +76,7 @@ function orderMessage(args: {
  * customer never presses Send.
  */
 // Turned on at launch (ENFORCE_APP_CHECK=true in functions/.env) once the web app sends App Check tokens.
-export const placeOrder = onCall({ region: REGION, enforceAppCheck: process.env.ENFORCE_APP_CHECK === "true" }, async (req) => {
+export const placeOrder = onCall({ ...CALLABLE, enforceAppCheck: process.env.ENFORCE_APP_CHECK === "true" }, async (req) => {
   const input = parse(placeOrderSchema, req.data);
 
   // Merge duplicate lines (same product + unit).
@@ -215,7 +215,7 @@ const ALLOWED: Record<string, string[]> = {
  * Staff: moves an order through new → confirmed → completed / cancelled.
  * Completing deducts stock and creates a sale with a receipt.
  */
-export const updateOrderStatus = onCall({ region: REGION }, async (req) => {
+export const updateOrderStatus = onCall({ ...CALLABLE }, async (req) => {
   const caller = requireStaff(req);
   const input = parse(updateOrderStatusSchema, req.data);
 

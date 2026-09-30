@@ -74,7 +74,14 @@ Firebase project: **`china-in-ghana`** (already set in `.firebaserc`; the emulat
    gcloud projects add-iam-policy-binding china-in-ghana --member=serviceAccount:71237897710-compute@developer.gserviceaccount.com --role=roles/cloudbuild.builds.builder
    gcloud storage buckets add-iam-policy-binding gs://china-in-ghana-backups --member=serviceAccount:service-71237897710@gcp-sa-firestore.iam.gserviceaccount.com --role=roles/storage.admin
    ```
-   Then `firebase deploy --only firestore,storage,functions`. `npx tsx scripts/init-settings.ts` creates the settings documents (safe to re-run).
+   The functions' runtime account also needs data access (new projects no longer grant it by default):
+   ```bash
+   for r in datastore.user firebaseauth.admin firebasecloudmessaging.admin; do gcloud projects add-iam-policy-binding china-in-ghana --member=serviceAccount:71237897710-compute@developer.gserviceaccount.com --role=roles/$r --condition=None; done
+   ```
+   Then `firebase deploy --only firestore,storage,functions`. Callables must be publicly invokable (each one checks sign-in and role itself). The CLI only sets this when a function is first created, so after a failed first deploy set it by hand:
+   ```bash
+   for s in placeorder updateorderstatus adjuststock closeday reopenday submitstocktake reviewstocktake importproducts setpushtoken recordsale voidsale createbranch createstaff updatestaff setadminaccount; do gcloud run services add-iam-policy-binding $s --region europe-west1 --member=allUsers --role=roles/run.invoker; done
+   ``` `npx tsx scripts/init-settings.ts` creates the settings documents (safe to re-run).
 6. Website: App Hosting backend `web` in `europe-west4` → https://web--china-in-ghana.europe-west4.hosted.app. Deploy from this folder with `firebase deploy --only apphosting` (uploads skip `.env.local`). To auto-deploy on every push instead, connect the GitHub repo in Firebase console → App Hosting → web → Settings.
 7. Grant roles to Auth users: `npx tsx scripts/grant-role.ts <uid> admin` (or `superadmin`, or `manager <branchId>`). Needs `gcloud auth application-default login`. The seed script is for the emulators only.
 
