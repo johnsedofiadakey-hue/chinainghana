@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { addDoc, collection, doc, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, doc, query, serverTimestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 import { Boxes, Copy, Eye, EyeOff, Gift, Package, Pencil, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, EmptyState, PageHeader, Spinner } from "@/components/ui/misc";
@@ -49,6 +49,7 @@ function ProductsInner({ fixedBranchId }: { fixedBranchId: string | null }) {
   const [formOpen, setFormOpen] = useState(false);
   const [stockId, setStockId] = useState<string | null>(null);
   const [copying, setCopying] = useState<Product | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
 
@@ -115,6 +116,11 @@ function ProductsInner({ fixedBranchId }: { fixedBranchId: string | null }) {
           <>
             {!fixedBranchId && <BranchSelect branches={branches} value={branchId} onChange={setPicked} allowAll={false} />}
             {branchId && <SheetButtons onImport={() => setImportOpen(true)} onExport={doExport} exporting={exporting} />}
+            {!fixedBranchId && branches.length > 1 && (
+              <Button variant="secondary" disabled={!filtered.length} onClick={() => setBulkOpen(true)}>
+                <Copy className="size-4" /> Copy to branch
+              </Button>
+            )}
             <Button
               variant="cta"
               disabled={!branchId}
@@ -275,6 +281,16 @@ function ProductsInner({ fixedBranchId }: { fixedBranchId: string | null }) {
       )}
       <StockDialog product={stockProduct} onClose={() => setStockId(null)} />
       <CopyDialog product={copying} branches={branches} onClose={() => setCopying(null)} />
+      {!fixedBranchId && (
+        <BulkCopyDialog
+          open={bulkOpen}
+          onClose={() => setBulkOpen(false)}
+          products={filtered}
+          narrowed={filtered.length !== products.length}
+          source={branch}
+          branches={branches}
+        />
+      )}
       {branchId && <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} branchId={branchId} branchName={branch?.name ?? ""} products={products} />}
     </div>
   );
@@ -372,5 +388,135 @@ export function ProductsPanel({ fixedBranchId }: { fixedBranchId: string | null 
     <Suspense fallback={<Spinner />}>
       <ProductsInner fixedBranchId={fixedBranchId} />
     </Suspense>
+  );
+}
+
+/**
+ * Admin: copies every product currently shown (all, or whatever the search/filters narrow it to)
+ * into another branch in one go. Photos, prices and settings come along; stock starts at 0.
+ * Products the target branch already has (same code) are skipped.
+ */
+function BulkCopyDialog({
+  open,
+  onClose,
+  products,
+  narrowed,
+  source,
+  branches,
+}: {
+  open: boolean;
+  onClose: () => void;
+  products: Product[];
+  narrowed: boolean;
+  source: Branch | null;
+  branches: Branch[];
+}) {
+  const others = branches.filter((b) => b.id !== source?.id);
+  const [target, setTarget] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (open) {
+      setTarget(others.length === 1 ? others[0].id : "");
+      setProgress(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const { data: targetProducts, loading } = useQueryData<Product>(
+    open && target ? query(collection(db, "products"), where("branchId", "==", target)) : null,
+    `bulkcopy:${target}`,
+  );
+  const existingCodes = useMemo(() => new Set(targetProducts.map((p) => p.code.trim().toUpperCase())), [targetProducts]);
+  const toCopy = useMemo(() => products.filter((p) => !existingCodes.has(p.code.trim().toUpperCase())), [products, existingCodes]);
+  const skipped = products.length - toCopy.length;
+  const targetName = branches.find((b) => b.id === target)?.name ?? "";
+
+  async function copyAll() {
+    if (!target || !toCopy.length) return;
+    setBusy(true);
+    setProgress(0);
+    try {
+      // Firestore batches hold up to 500 writes; stay well under.
+      for (let i = 0; i < toCopy.length; i += 200) {
+        const batch = writeBatch(db);
+        for (const product of toCopy.slice(i, i + 200)) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { id, branchId, stockPieces, updatedAt, ...rest } = product;
+          batch.set(doc(collection(db, "products")), {
+            ...rest,
+            branchId: target,
+            stockPieces: 0,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        }
+        await batch.commit();
+        setProgress(Math.min(i + 200, toCopy.length));
+      }
+      toast.success(`${toCopy.length} product${toCopy.length === 1 ? "" : "s"} copied to ${targetName}. Stock starts at 0.`);
+      onClose();
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={busy ? () => undefined : onClose}
+      title="Copy products to another branch"
+      description={source ? `From ${source.name}` : undefined}
+      size="sm"
+      footer={
+        <div className="flex items-center justify-end gap-2">
+          {busy && (
+            <span className="mr-auto text-[13px] text-ink-soft">
+              {progress} / {toCopy.length}
+            </span>
+          )}
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button loading={busy} disabled={!target || loading || !toCopy.length} onClick={copyAll}>
+            {target && !loading ? `Copy ${toCopy.length} product${toCopy.length === 1 ? "" : "s"}` : "Copy"}
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-ink-soft">
+          {narrowed
+            ? `Copies the ${products.length} product${products.length === 1 ? "" : "s"} shown in the list right now (your search or filters). Clear them to copy everything.`
+            : `Copies all ${products.length} product${products.length === 1 ? "" : "s"} from this branch.`}{" "}
+          Names, codes, photos, prices and promos come along. Stock starts at 0, and the other branch can change its own prices afterwards.
+        </p>
+        <fieldset className="space-y-2">
+          <legend className="mb-1 text-sm font-medium text-navy-900">Copy to</legend>
+          {others.map((b) => (
+            <label key={b.id} className={cn("flex cursor-pointer items-center gap-3 rounded-xl p-3 ring-1 ring-inset", target === b.id ? "bg-navy-50/60 ring-2 ring-navy-600" : "ring-line hover:bg-surface")}>
+              <input type="radio" name="bulk-target" className="size-4 accent-navy-700" checked={target === b.id} onChange={() => setTarget(b.id)} disabled={busy} />
+              <span className="flex-1 text-sm font-medium">{b.name}</span>
+              {!b.active && <Badge tone="neutral">Inactive</Badge>}
+            </label>
+          ))}
+        </fieldset>
+        {target && !loading && (
+          <div className="rounded-xl bg-surface p-3 text-sm">
+            <p>
+              <span className="font-semibold text-navy-900">{toCopy.length}</span> will be copied to {targetName}.
+            </p>
+            {skipped > 0 && (
+              <p className="mt-0.5 text-ink-soft">
+                {skipped} skipped: {targetName} already has a product with the same code.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </Modal>
   );
 }

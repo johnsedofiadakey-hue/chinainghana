@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { Building2, Clock, Crosshair, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Power } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
@@ -149,6 +149,7 @@ interface FormState {
   location: LatLng | null;
   latText: string;
   lngText: string;
+  slug: string;
 }
 
 function fromBranch(b: Branch | null): FormState {
@@ -163,6 +164,7 @@ function fromBranch(b: Branch | null): FormState {
     location: b ? { lat: b.lat, lng: b.lng } : null,
     latText: b ? b.lat.toFixed(6) : "",
     lngText: b ? b.lng.toFixed(6) : "",
+    slug: b?.slug ?? "",
   };
 }
 
@@ -241,6 +243,7 @@ function BranchForm({
   function validate() {
     const e: Record<string, string> = {};
     if (f.name.trim().length < 2) e.name = "Enter the branch name.";
+    if (branch && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(f.slug)) e.slug = "Use lowercase letters, numbers and dashes, like afienya or east-legon.";
     if (f.address.trim().length < 3) e.address = "Enter the address.";
     if (!wa) e.whatsapp = "Enter a valid Ghana WhatsApp number, e.g. 024 123 4567.";
     if (!f.location) e.location = "Set the branch location. Customers are matched to the nearest branch.";
@@ -264,7 +267,15 @@ function BranchForm({
     };
     try {
       if (branch) {
-        await updateDoc(doc(db, "branches", branch.id), { ...data, updatedAt: serverTimestamp() });
+        if (f.slug !== branch.slug) {
+          const taken = await getDocs(query(collection(db, "branches"), where("slug", "==", f.slug)));
+          if (taken.docs.some((d) => d.id !== branch.id)) {
+            setErrors((e) => ({ ...e, slug: "Another branch already uses this link. Choose a different one." }));
+            setBusy(false);
+            return;
+          }
+        }
+        await updateDoc(doc(db, "branches", branch.id), { ...data, slug: f.slug, updatedAt: serverTimestamp() });
         toast.success("Branch updated");
       } else {
         const res = await api.createBranch(data);
@@ -307,6 +318,42 @@ function BranchForm({
           </Field>
         </div>
 
+        {branch && (
+          <Field
+            label="Shop link"
+            error={errors.slug}
+            hint={
+              <>
+                Customers open <span className="font-medium text-navy-900">chinainghana.com/b/{f.slug || "…"}</span> to go straight to this branch. Changing it stops old
+                links from working.
+              </>
+            }
+          >
+            {(id) => (
+              <div className="flex items-center rounded-xl bg-white ring-1 ring-inset ring-line focus-within:ring-2 focus-within:ring-navy-500">
+                <span className="pl-3.5 text-[15px] text-ink-soft">/b/</span>
+                <input
+                  id={id}
+                  className="h-11 w-full rounded-xl bg-transparent pr-3.5 text-[15px] text-ink focus:outline-none"
+                  value={f.slug}
+                  onChange={(e) =>
+                    set(
+                      "slug",
+                      e.target.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9-]+/g, "-")
+                        .replace(/-{2,}/g, "-")
+                        .replace(/^-/, ""),
+                    )
+                  }
+                  placeholder="afienya"
+                  spellCheck={false}
+                  autoCapitalize="none"
+                />
+              </div>
+            )}
+          </Field>
+        )}
         <Field label="Address" required error={errors.address}>
           {(id) => <Input id={id} value={f.address} onChange={(e) => set("address", e.target.value)} placeholder="Winneba Road, Kaneshie, Accra" />}
         </Field>
