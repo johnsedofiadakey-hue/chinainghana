@@ -5,13 +5,14 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Building2,
+  CircleHelp,
   ClipboardCheck,
-  History,
-  MoonStar,
   ExternalLink,
+  History,
   KeyRound,
   LayoutDashboard,
   LogOut,
+  MoonStar,
   Package,
   Receipt,
   Settings,
@@ -46,6 +47,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/staff", label: "Managers", icon: Users },
   { href: "/admin/activity", label: "Activity log", icon: History },
   { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin/help", label: "Help", icon: CircleHelp },
 ];
 
 const MANAGER_NAV: NavItem[] = [
@@ -57,6 +59,7 @@ const MANAGER_NAV: NavItem[] = [
   { href: "/manager/stock-take", label: "Stock take", icon: ClipboardCheck },
   { href: "/manager/close", label: "Daily close", icon: MoonStar },
   { href: "/manager/reports", label: "Reports", icon: BarChart3 },
+  { href: "/manager/help", label: "Help", icon: CircleHelp },
 ];
 
 const SUPER_NAV: NavItem[] = [{ href: "/super", label: "Developer", icon: ShieldCheck }];
@@ -123,6 +126,13 @@ export function ConsoleShell({ area, children }: { area: "admin" | "manager"; ch
           </div>
         </div>
         <div className="flex items-center gap-1">
+          <Link
+            href={`/${area}/help`}
+            aria-label="Help"
+            className="inline-flex size-10 items-center justify-center rounded-xl hover:bg-white/10"
+          >
+            <CircleHelp className="size-5" />
+          </Link>
           {area === "admin" && (
             <Link
               href="/admin/settings"
