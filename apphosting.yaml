@@ -31,9 +31,9 @@ env:
     value: 1:71237897710:web:688d63f8533e045f3712ff
     availability: [BUILD, RUNTIME]
   # Add once created in the Firebase console:
-  # - variable: NEXT_PUBLIC_FIREBASE_VAPID_KEY      # Cloud Messaging → Web Push certificates
-  #   value: ...
-  #   availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_VAPID_KEY      # Cloud Messaging → Web Push certificates (public key)
+    value: BIcGggc2dJJQFA-NYusrTidlyXC4kepn7v08QLNhSEIu-jWBr2uZMluNGIwA6yoiDI7RTwkIhhTcmxIJ2bEVPds
+    availability: [BUILD, RUNTIME]
   # - variable: NEXT_PUBLIC_RECAPTCHA_SITE_KEY      # App Check → reCAPTCHA Enterprise
   #   value: ...
   #   availability: [BUILD, RUNTIME]
