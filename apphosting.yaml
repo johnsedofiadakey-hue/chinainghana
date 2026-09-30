@@ -12,6 +12,9 @@ env:
   - variable: NEXT_PUBLIC_USE_EMULATORS
     value: "false"
     availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_SITE_URL                # canonical address, used for link previews
+    value: https://web--china-in-ghana.europe-west4.hosted.app   # TODO: https://chinainghana.com once the domain is verified
+    availability: [BUILD, RUNTIME]
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: AIzaSyDpX273YkBz0Ma2F3AH5LstlPzYEOJ4mkI
     availability: [BUILD, RUNTIME]

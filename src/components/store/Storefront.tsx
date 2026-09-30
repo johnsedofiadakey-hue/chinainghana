@@ -16,7 +16,7 @@ import { useDocData, useLocalState, useQueryData } from "@/lib/hooks";
 import type { AppSettings, Branch, Category, Product } from "@/lib/types";
 import { cartKey, useBranchCart, useCart } from "@/store/cart";
 import { AvailabilityBadge, GiftTag, ProductImage, QtyStepper } from "./bits";
-import { BranchPicker, LocationPrompt, type BranchWithDistance } from "./BranchPicker";
+import { BranchPicker, LocationPrompt, type BranchWithDistance, type LocateStep } from "./BranchPicker";
 import { CartSheet, useResolvedCart } from "./CartSheet";
 import { ProductSheet } from "./ProductSheet";
 
@@ -42,7 +42,8 @@ export function Storefront({ initialSlug }: { initialSlug?: string }) {
   const [pos, setPos] = useState<LatLng | null>(null);
   const [locStatus, setLocStatus] = useState<LocStatus>("idle");
   const [locating, setLocating] = useState(false);
-  const [promptOpen, setPromptOpen] = useState(false);
+  const [promptStep, setPromptStep] = useState<LocateStep | null>(null);
+  const [suggestedId, setSuggestedId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
@@ -58,13 +59,30 @@ export function Storefront({ initialSlug }: { initialSlug?: string }) {
     );
   }, [branchesQ.data, pos]);
 
-  // Restore a location found earlier in this browser session.
+  // Restore a location found earlier in this session. If the visitor already allowed location
+  // on an earlier visit, refresh it quietly (no prompt) so distances show again.
   useEffect(() => {
     const p = readSessionPos();
     if (p) {
       setPos(p);
       setLocStatus("ok");
+      return;
     }
+    navigator.permissions
+      ?.query({ name: "geolocation" as PermissionName })
+      .then((perm) => {
+        if (perm.state !== "granted") return;
+        return getDevicePosition().then((found) => {
+          setPos(found);
+          setLocStatus("ok");
+          try {
+            sessionStorage.setItem("cig.pos", JSON.stringify(found));
+          } catch {
+            /* ignore */
+          }
+        });
+      })
+      .catch(() => undefined);
   }, []);
 
   // Branch from the URL (/b/[slug]) wins, then the saved one; otherwise ask.
@@ -78,17 +96,20 @@ export function Storefront({ initialSlug }: { initialSlug?: string }) {
       }
     }
     const saved = branchesQ.data.find((x) => x.id === savedBranchId);
-    if (!saved && branchesQ.data.length) {
-      if (branchesQ.data.length === 1) setSavedBranchId(branchesQ.data[0].id);
-      else setPromptOpen(true);
-    }
+    // First visit: ask for location straight away (even with one branch, to show the distance).
+    if (!saved && branchesQ.data.length) void locate(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageReady, branchesQ.loading, initialSlug]);
 
   const branch = branches.find((b) => b.id === savedBranchId) ?? null;
 
-  async function locate() {
+  /**
+   * Finds the nearest branch. From the first-visit flow (`fromPrompt`) it walks the prompt through
+   * asking → found / denied / error; from the branch list it just re-sorts and selects.
+   */
+  async function locate(fromPrompt = false) {
     setLocating(true);
+    if (fromPrompt) setPromptStep("asking");
     try {
       const p = await getDevicePosition();
       setPos(p);
@@ -101,15 +122,17 @@ export function Storefront({ initialSlug }: { initialSlug?: string }) {
       const nearest = [...branchesQ.data].sort((a, b) => distanceKm(p, a) - distanceKm(p, b))[0];
       if (nearest) {
         setSavedBranchId(nearest.id);
-        toast.success(`Nearest branch: ${nearest.name} (${formatKm(distanceKm(p, nearest))} away)`);
+        setSuggestedId(nearest.id);
+        if (fromPrompt) setPromptStep("found");
+        else toast.success(`Nearest branch: ${nearest.name} (${formatKm(distanceKm(p, nearest))} away)`);
+      } else if (fromPrompt) {
+        setPromptStep(null);
       }
-      setPromptOpen(false);
     } catch (e) {
       const denied = (e as GeolocationPositionError)?.code === 1;
       setLocStatus(denied ? "denied" : "error");
-      toast.error(denied ? "Location permission was blocked. Choose your branch from the list." : "Couldn't get your location. Choose your branch from the list.");
-      setPromptOpen(false);
-      setPickerOpen(true);
+      if (fromPrompt) setPromptStep(denied ? "denied" : "error");
+      else toast.error(denied ? "Location is blocked for this site. Choose your branch from the list." : "Couldn't get your location. Choose your branch from the list.");
     } finally {
       setLocating(false);
     }
@@ -335,11 +358,16 @@ export function Storefront({ initialSlug }: { initialSlug?: string }) {
       )}
 
       <LocationPrompt
-        open={promptOpen}
-        locating={locating}
-        onLocate={locate}
+        step={promptStep}
+        suggested={branches.find((b) => b.id === suggestedId) ?? null}
+        onRetry={() => void locate(true)}
+        onConfirm={() => setPromptStep(null)}
         onManual={() => {
-          setPromptOpen(false);
+          setPromptStep(null);
+          setPickerOpen(true);
+        }}
+        onSeeAll={() => {
+          setPromptStep(null);
           setPickerOpen(true);
         }}
       />
@@ -349,7 +377,7 @@ export function Storefront({ initialSlug }: { initialSlug?: string }) {
         branches={branches}
         selectedId={branch?.id ?? null}
         onSelect={(id) => setSavedBranchId(id)}
-        onLocate={locate}
+        onLocate={() => void locate()}
         locating={locating}
         locStatus={locStatus}
       />

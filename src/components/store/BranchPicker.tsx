@@ -138,39 +138,99 @@ export function BranchPicker({
   );
 }
 
+export type LocateStep = "asking" | "found" | "denied" | "error";
+
+/**
+ * First-visit flow: asks for location straight away and only offers the manual branch list
+ * after the visitor declines (or location fails). When found, names the nearest branch and its distance.
+ */
 export function LocationPrompt({
-  open,
-  onLocate,
+  step,
+  suggested,
+  onRetry,
   onManual,
-  locating,
+  onConfirm,
+  onSeeAll,
 }: {
-  open: boolean;
-  onLocate: () => void;
+  step: LocateStep | null;
+  suggested: BranchWithDistance | null;
+  onRetry: () => void;
   onManual: () => void;
-  locating: boolean;
+  onConfirm: () => void;
+  onSeeAll: () => void;
 }) {
+  const open = step !== null;
+  // While asking there's nothing to fall back to yet; closing a result confirms it; closing an error goes to the list.
+  const onClose = step === "found" ? onConfirm : step === "denied" || step === "error" ? onManual : () => undefined;
+
   return (
-    <Modal open={open} onClose={onManual} title="Welcome to China-in-Ghana" size="sm">
-      <div className="text-center">
-        <div className="relative mx-auto mb-4 flex size-20 items-center justify-center">
-          <span className="absolute inset-0 animate-ping rounded-full bg-brand-orange/20" />
-          <span className="relative flex size-16 items-center justify-center rounded-full bg-brand-orange text-white">
+    <Modal open={open} onClose={onClose} title="Welcome to China-in-Ghana" size="sm">
+      {step === "asking" && (
+        <div className="py-2 text-center" aria-live="polite">
+          <div className="relative mx-auto mb-4 flex size-20 items-center justify-center">
+            <span className="absolute inset-0 animate-ping rounded-full bg-brand-orange/25" />
+            <span className="relative flex size-16 items-center justify-center rounded-full bg-brand-orange text-white">
+              <LocateFixed className="size-8" />
+            </span>
+          </div>
+          <p className="font-display text-xl font-bold text-navy-900">Finding your nearest branch…</p>
+          <p className="mx-auto mt-1 max-w-xs text-sm text-ink-soft">
+            Tap <strong className="text-navy-900">Allow</strong> when your phone asks for your location, so we can show prices and stock at the branch closest to you.
+          </p>
+          <p className="mx-auto mt-4 max-w-xs text-[12px] text-ink-soft">Your location stays on your phone. It&apos;s never saved or shared.</p>
+        </div>
+      )}
+
+      {step === "found" && suggested && (
+        <div className="text-center" aria-live="polite">
+          <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-fresh-soft text-fresh-ink">
             <MapPin className="size-8" />
-          </span>
+          </div>
+          <p className="text-sm text-ink-soft">Your nearest branch is</p>
+          <p className="font-display text-2xl font-black text-navy-900">{suggested.name}</p>
+          {suggested.distanceKm != null && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-orange-soft px-3 py-1 font-display text-base font-bold text-brand-orange-dark">
+              <Navigation className="size-4" /> {formatKm(suggested.distanceKm)} away
+            </p>
+          )}
+          <p className="mx-auto mt-3 max-w-xs text-[13px] text-ink-soft">
+            {suggested.address}
+            {suggested.landmark ? ` · ${suggested.landmark}` : ""}
+          </p>
+          <div className="mt-6 space-y-2">
+            <Button block size="lg" variant="cta" onClick={onConfirm}>
+              Shop at {suggested.name}
+            </Button>
+            <Button block variant="ghost" onClick={onSeeAll}>
+              See all branches by distance
+            </Button>
+          </div>
         </div>
-        <p className="font-display text-xl font-bold text-navy-900">Find your nearest branch</p>
-        <p className="mx-auto mt-1 max-w-xs text-sm text-ink-soft">
-          We&apos;ll show live prices and stock at the branch closest to you. Your location never leaves your phone.
-        </p>
-        <div className="mt-6 space-y-2">
-          <Button block size="lg" variant="cta" onClick={onLocate} loading={locating}>
-            <LocateFixed className="size-5" /> Use my location
-          </Button>
-          <Button block variant="ghost" onClick={onManual}>
-            I&apos;ll choose a branch myself
-          </Button>
+      )}
+
+      {(step === "denied" || step === "error") && (
+        <div className="text-center" aria-live="polite">
+          <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-sun-soft text-sun-ink">
+            <MapPin className="size-8" />
+          </div>
+          <p className="font-display text-xl font-bold text-navy-900">
+            {step === "denied" ? "Location is turned off" : "We couldn't find your location"}
+          </p>
+          <p className="mx-auto mt-1 max-w-xs text-sm text-ink-soft">
+            {step === "denied"
+              ? "Allow location for this site in your browser or phone settings, then tap Try again. Or choose your branch yourself."
+              : "Check that location (GPS) is on, then tap Try again. Or choose your branch yourself."}
+          </p>
+          <div className="mt-6 space-y-2">
+            <Button block size="lg" variant="cta" onClick={onRetry}>
+              <LocateFixed className="size-5" /> Try again
+            </Button>
+            <Button block variant="secondary" onClick={onManual}>
+              Choose a branch myself
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </Modal>
   );
 }

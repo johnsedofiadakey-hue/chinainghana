@@ -82,7 +82,7 @@ Firebase project: **`china-in-ghana`** (already set in `.firebaserc`; the emulat
    ```bash
    for s in placeorder updateorderstatus adjuststock closeday reopenday submitstocktake reviewstocktake importproducts setpushtoken recordsale voidsale createbranch createstaff updatestaff setadminaccount; do gcloud run services add-iam-policy-binding $s --region europe-west1 --member=allUsers --role=roles/run.invoker; done
    ``` `npx tsx scripts/init-settings.ts` creates the settings documents (safe to re-run).
-6. Website: App Hosting backend `web` in `europe-west4` → https://web--china-in-ghana.europe-west4.hosted.app. Deploy from this folder with `firebase deploy --only apphosting` (uploads skip `.env.local`). To auto-deploy on every push instead, connect the GitHub repo in Firebase console → App Hosting → web → Settings.
+6. Website: App Hosting backend `web` in `europe-west4` → https://chinainghana.com (www redirects to it; the hosted.app address also still works). Deploy from this folder with `firebase deploy --only apphosting` (uploads skip `.env.local`). To auto-deploy on every push instead, connect the GitHub repo in Firebase console → App Hosting → web → Settings.
 7. Grant roles to Auth users: `npx tsx scripts/grant-role.ts <uid> admin` (or `superadmin`, or `manager <branchId>`). Needs `gcloud auth application-default login`. The seed script is for the emulators only.
 
 ## Checks

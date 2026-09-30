@@ -19,7 +19,7 @@ const satoshi = localFont({
 });
 
 // Absolute base for link-preview images (WhatsApp needs full URLs). Override with NEXT_PUBLIC_SITE_URL for a custom domain.
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://web--china-in-ghana.europe-west4.hosted.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://chinainghana.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
