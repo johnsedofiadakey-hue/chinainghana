@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "china-in-ghana",
+    "prod": "china-in-ghana",
+    "local": "demo-cig"
+  }
+}

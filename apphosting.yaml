@@ -1,0 +1,39 @@
+# Firebase App Hosting config (Next.js). Builds from GitHub on every push to main.
+# Firebase web config values are public identifiers, not secrets — safe to commit.
+# Access to data is controlled by Security Rules and App Check, not by hiding these.
+runConfig:
+  minInstances: 0
+  maxInstances: 4
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  - variable: NEXT_PUBLIC_USE_EMULATORS
+    value: "false"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyDpX273YkBz0Ma2F3AH5LstlPzYEOJ4mkI
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: china-in-ghana.firebaseapp.com
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: china-in-ghana
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: china-in-ghana.firebasestorage.app
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "71237897710"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:71237897710:web:688d63f8533e045f3712ff
+    availability: [BUILD, RUNTIME]
+  # Add once created in the Firebase console:
+  # - variable: NEXT_PUBLIC_FIREBASE_VAPID_KEY      # Cloud Messaging → Web Push certificates
+  #   value: ...
+  #   availability: [BUILD, RUNTIME]
+  # - variable: NEXT_PUBLIC_RECAPTCHA_SITE_KEY      # App Check → reCAPTCHA Enterprise
+  #   value: ...
+  #   availability: [BUILD, RUNTIME]
