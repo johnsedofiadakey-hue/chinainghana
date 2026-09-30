@@ -324,6 +324,20 @@ export const SECTIONS: HelpSection[] = [
         link: { href: "~/stock-take", label: "Start a stock take", only: "manager" },
       },
       {
+        id: "inventory",
+        title: "See stock at every branch",
+        summary: "One screen with every product and how much each branch has.",
+        only: "admin",
+        steps: [
+          "Go to Inventory. Each row is a product, each column a branch, with the total on the right.",
+          "Red means out of stock, yellow means low, and a dash means that branch doesn't sell it.",
+          "Use the filters to find products that are low or out anywhere, missing at a branch, or priced differently between branches.",
+          "Tap a branch's stock to receive stock or correct it, without switching branches.",
+          "Export CSV gives the same table as a spreadsheet.",
+        ],
+        link: { href: "~/inventory", label: "Open Inventory", only: "admin" },
+      },
+      {
         id: "low-stock",
         title: "Low-stock and out-of-stock alerts",
         summary: "The app warns you before a product runs out.",

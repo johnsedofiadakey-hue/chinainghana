@@ -20,6 +20,7 @@ import {
   ShoppingCart,
   Store,
   Users,
+  Warehouse,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LogoMark } from "@/components/brand/logo";
@@ -41,6 +42,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/sales", label: "Sales", icon: Receipt, mobile: true },
   { href: "/admin/products", label: "Products", icon: Package, mobile: true },
   { href: "/admin/branches", label: "Branches", icon: Building2, mobile: true },
+  { href: "/admin/inventory", label: "Inventory", icon: Warehouse },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/stock-takes", label: "Stock takes", icon: ClipboardCheck },
   { href: "/admin/close", label: "Daily close", icon: MoonStar },

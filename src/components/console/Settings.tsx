@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
-import { BarChart3, ChevronRight, ClipboardCheck, History, KeyRound, MoonStar, Plus, ShieldCheck, Tag, Users } from "lucide-react";
+import { BarChart3, ChevronRight, ClipboardCheck, History, KeyRound, MoonStar, Plus, ShieldCheck, Tag, Users, Warehouse } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
@@ -59,6 +59,7 @@ export function SettingsPanel() {
       {/* On phones these pages aren't in the bottom bar. */}
       <Card className="mb-4 overflow-hidden md:hidden">
         {[
+          { href: "/admin/inventory", label: "Inventory (all branches)", icon: Warehouse },
           { href: "/admin/reports", label: "Reports", icon: BarChart3 },
           { href: "/admin/stock-takes", label: "Stock takes", icon: ClipboardCheck },
           { href: "/admin/close", label: "Daily close", icon: MoonStar },

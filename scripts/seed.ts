@@ -16,6 +16,7 @@ process.env.FIREBASE_AUTH_EMULATOR_HOST ??= "127.0.0.1:9099";
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { existsSync } from "node:fs";
 
 const app = initializeApp({ projectId: "demo-cig" });
 const auth = getAuth(app);
@@ -190,23 +191,36 @@ async function main() {
   // ---- Promo products from the client's flyers (26 Oct – 2 Nov): sold singly, each with a free gift ----
   const PROMO = { startsAt: "2026-10-26", endsAt: "2026-11-02" };
   const features = (litres: number) => `${litres}L storage capacity · Energy efficient · Strong & durable · Keeps food fresh longer.`;
-  const promos = [
+  const promos: { code: string; name: string; litres: number; price: number; gift: string | null; description?: string }[] = [
     { code: "GME-400", name: "GME 400L Chest Freezer", litres: 400, price: 5500, gift: "Morgan 2-in-1 Blender" },
     { code: "SNW-500", name: "Snowsea 500L Chest Freezer", litres: 500, price: 6800, gift: "Morgan Microwave" },
     { code: "GME-300", name: "GME 300L Chest Freezer", litres: 300, price: 3200, gift: "Morgan Rice Cooker" },
     { code: "GME-200", name: "GME 200L Chest Freezer", litres: 200, price: 2400, gift: 'Morgan 18" Standing Fan' },
     { code: "BCD-139", name: "GME 139L Fridge (Bottom Freezer)", litres: 139, price: 2900, gift: "GME Double Hotplate" },
     { code: "BCD-138", name: "Bright Cool 138L Fridge", litres: 138, price: 1700, gift: "Morgan Iron" },
+    { code: "NAS-150", name: "Nasco 150L Chest Freezer (Large Capacity)", litres: 150, price: 2000, gift: "Stanley Cup (random colour)" },
+    {
+      code: "PRL-708",
+      name: "Pearl 708L Chest Freezer + Gas Cooker & Kettle (Bundle)",
+      litres: 708,
+      price: 9500,
+      gift: null,
+      description: "Bundle price for all three: Pearl 708L chest freezer + 50×50 gas cooker with oven + Sokany kettle. 708L large capacity · Energy efficient · Strong & durable · Fast cooling & freezing.",
+    },
   ];
   // Images come from the client's flyers: node scripts/promo-images.mjs <folder>
-  const promoImage = (code: string, kind: "" | "-flyer" | "-gift") => `/promos/${code.toLowerCase()}${kind}.webp`;
+  // Flyers not cut yet (scripts/promo-images.mjs) get no image.
+  const promoImage = (code: string, kind: "" | "-flyer" | "-gift") => {
+    const path = `/promos/${code.toLowerCase()}${kind}.webp`;
+    return existsSync(`public${path}`) ? path : null;
+  };
   for (const b of branches) {
     for (const [i, p] of promos.entries()) {
       await db.doc(`products/${b.id}_${p.code}`).set({
         branchId: b.id,
         code: p.code,
         name: p.name,
-        description: features(p.litres),
+        description: p.description ?? features(p.litres),
         categoryId: "fridges-freezers",
         qtyPerBox: 1,
         unitLabel: "unit",
@@ -220,9 +234,9 @@ async function main() {
         imageUrl: promoImage(p.code, "-flyer"),
         thumbUrl: promoImage(p.code, ""),
         tags: ["hot"],
-        freeGift: { name: p.gift, imageUrl: promoImage(p.code, "-gift"), ...PROMO },
+        freeGift: p.gift ? { name: p.gift, imageUrl: promoImage(p.code, "-gift"), ...PROMO } : null,
         visible: true,
-        searchText: `${p.name} ${p.code} ${p.gift}`.toLowerCase(),
+        searchText: `${p.name} ${p.code} ${p.gift ?? ""}`.trim().toLowerCase(),
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       });
@@ -249,7 +263,7 @@ async function main() {
     branchName: "Kumasi Adum",
   });
 
-  console.log("✔ Seeded settings, 4 categories, 2 branches, 8 products per branch (6 promo items with free gifts) and 4 staff accounts.");
+  console.log("✔ Seeded settings, 4 categories, 2 branches, 10 products per branch (8 flyer promos: 7 with free gifts, 1 bundle) and 4 staff accounts.");
 }
 
 main().then(
