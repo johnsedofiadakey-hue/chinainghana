@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
-import { Building2, Clock, Crosshair, ExternalLink, Link2, MapPin, MessageCircle, Pencil, Plus, Power } from "lucide-react";
+import { Building2, Clock, Crosshair, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Power } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { Badge, Card, EmptyState, PageHeader, Spinner } from "@/components/ui/misc";
@@ -147,7 +147,8 @@ interface FormState {
   phone: string;
   hours: string;
   location: LatLng | null;
-  paste: string;
+  latText: string;
+  lngText: string;
 }
 
 function fromBranch(b: Branch | null): FormState {
@@ -160,7 +161,8 @@ function fromBranch(b: Branch | null): FormState {
     phone: b?.phone ?? "",
     hours: b?.hours ?? "Mon–Sat 8:00am – 6:00pm",
     location: b ? { lat: b.lat, lng: b.lng } : null,
-    paste: "",
+    latText: b ? b.lat.toFixed(6) : "",
+    lngText: b ? b.lng.toFixed(6) : "",
   };
 }
 
@@ -192,12 +194,17 @@ function BranchForm({
     setErrors((e) => ({ ...e, [k]: "" }));
   };
 
-  function setLocation(p: LatLng) {
+  /** Sets the pin. From the map or GPS the coordinate fields are refreshed; while typing they're left as typed. */
+  function setLocation(p: LatLng, fromTyping = false) {
     if (!inGhana(p)) {
-      setErrors((e) => ({ ...e, location: "That point is outside Ghana. Pick the branch's location on the map." }));
+      setErrors((e) => ({
+        ...e,
+        location: "Those coordinates are outside Ghana. Check that latitude comes first (about 5 to 11) and longitude second (about -3 to 1).",
+      }));
       return;
     }
-    set("location", p);
+    setF((s) => ({ ...s, location: p, ...(fromTyping ? {} : { latText: p.lat.toFixed(6), lngText: p.lng.toFixed(6) }) }));
+    setErrors((e) => ({ ...e, location: "" }));
   }
 
   async function useMyLocation() {
@@ -211,12 +218,22 @@ function BranchForm({
     }
   }
 
-  function applyPaste(text: string) {
-    set("paste", text);
-    if (!text.trim()) return;
-    const p = parseCoordinates(text);
-    if (p) setLocation(p);
-    else setErrors((e) => ({ ...e, location: "Couldn't find coordinates in that link. Open the place in Google Maps and copy the link from the address bar." }));
+  /**
+   * Latitude/longitude typing. Pasting the pair Google Maps copies ("5.559400, -0.208600")
+   * into either box fills both.
+   */
+  function onCoordInput(which: "lat" | "lng", text: string) {
+    const pair = parseCoordinates(text);
+    if (pair && /[,\s]/.test(text.trim())) {
+      setLocation(pair);
+      return;
+    }
+    const next = { latText: which === "lat" ? text : f.latText, lngText: which === "lng" ? text : f.lngText };
+    setF((s) => ({ ...s, ...next }));
+    setErrors((e) => ({ ...e, location: "" }));
+    const lat = Number(next.latText.trim());
+    const lng = Number(next.lngText.trim());
+    if (next.latText.trim() && next.lngText.trim() && Number.isFinite(lat) && Number.isFinite(lng)) setLocation({ lat, lng }, true);
   }
 
   const wa = normalizeGhanaPhone(f.whatsapp);
@@ -335,24 +352,32 @@ function BranchForm({
               <Crosshair className="size-4" /> I&apos;m at the branch now
             </Button>
           </div>
-          <MapPicker value={f.location} onChange={setLocation} />
-          <div className="relative">
-            <Link2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-soft" />
-            <Input
-              className="pl-9"
-              value={f.paste}
-              onChange={(e) => applyPaste(e.target.value)}
-              placeholder="…or paste a Google Maps link"
-              aria-label="Google Maps link"
-            />
+          <MapPicker value={f.location} onChange={(p) => setLocation(p)} />
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="mb-1 block text-[13px] font-medium text-navy-900">Latitude</span>
+              <Input inputMode="decimal" value={f.latText} onChange={(e) => onCoordInput("lat", e.target.value)} placeholder="5.559400" aria-label="Latitude" />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[13px] font-medium text-navy-900">Longitude</span>
+              <Input inputMode="decimal" value={f.lngText} onChange={(e) => onCoordInput("lng", e.target.value)} placeholder="-0.208600" aria-label="Longitude" />
+            </label>
           </div>
+          <details className="rounded-xl bg-surface px-3 py-2 text-[13px] text-ink-soft">
+            <summary className="cursor-pointer font-medium text-navy-700">How to get coordinates from Google Maps</summary>
+            <ol className="mt-2 list-decimal space-y-1 pl-5">
+              <li>Phone: open Google Maps, press and hold on the branch until a red pin drops. The coordinates (like 5.559400, -0.208600) appear in the search bar. Tap them to copy.</li>
+              <li>Computer: right-click the branch on the map. The first line is the coordinates. Click it to copy.</li>
+              <li>Paste into either box above. Both fill in and the pin moves.</li>
+            </ol>
+          </details>
           {errors.location ? (
             <p className="text-[13px] text-alert-ink" role="alert">
               {errors.location}
             </p>
           ) : (
             <p className="text-[13px] text-ink-soft">
-              {f.location ? `Pinned at ${f.location.lat.toFixed(5)}, ${f.location.lng.toFixed(5)}. Drag the pin to adjust.` : "Tap the map to drop a pin."}
+              {f.location ? "Pin set. Drag it, tap the map, or edit the coordinates to adjust." : "Tap the map, enter coordinates, or use I'm at the branch now."}
             </p>
           )}
         </div>

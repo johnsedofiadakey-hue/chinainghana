@@ -348,7 +348,7 @@ export const SECTIONS: HelpSection[] = [
         steps: [
           "Go to Branches and tap Add branch, or Edit on an existing one.",
           "Enter the name, address and opening hours.",
-          "Set the map location: drag the pin, tap I'm at the branch now while standing there, or paste a Google Maps link.",
+          "Set the map location: drag the pin, tap I'm at the branch now while standing there, or enter the latitude and longitude from Google Maps (press and hold the spot in Google Maps, then copy the numbers that appear).",
           "Enter the WhatsApp number where this branch's orders should arrive, and use Test to check it.",
           "Save.",
         ],
