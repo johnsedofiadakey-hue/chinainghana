@@ -426,7 +426,7 @@ function ProductCard({
         <ProductImage
           src={p.thumbUrl ?? p.imageUrl}
           alt={p.name}
-          className={cn("aspect-square w-full transition duration-300 group-hover:scale-[1.03]", avail === "out" && "opacity-50 grayscale")}
+          className={cn("aspect-square w-full transition duration-300 group-hover:scale-[1.03]", avail === "out" && "opacity-80")}
         />
         <span className="absolute left-2 top-2 flex flex-col items-start gap-1">
           {giftStatus(p.freeGift) === "active" && <Badge tone="alert">

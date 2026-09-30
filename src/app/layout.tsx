@@ -18,7 +18,11 @@ const satoshi = localFont({
   display: "swap",
 });
 
+// Absolute base for link-preview images (WhatsApp needs full URLs). Override with NEXT_PUBLIC_SITE_URL for a custom domain.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://web--china-in-ghana.europe-west4.hosted.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "China-in-Ghana · Home appliances at wholesale prices",
     template: "%s · China-in-Ghana",
@@ -31,8 +35,9 @@ export const metadata: Metadata = {
     siteName: "China-in-Ghana",
     type: "website",
   },
+  twitter: { card: "summary_large_image" },
   appleWebApp: { capable: true, title: "China-in-Ghana", statusBarStyle: "black-translucent" },
-  icons: { apple: "/icons/apple-touch-icon.png" },
+  icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }], apple: "/icons/apple-touch-icon.png" },
   formatDetection: { telephone: false },
 };
 

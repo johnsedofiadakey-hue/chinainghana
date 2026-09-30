@@ -1,6 +1,6 @@
 /* China-in-Ghana service worker: offline shell + web push.
  * Registered as /sw.js (production) or /sw.js?dev=1 (development: push only, no caching). */
-const VERSION = "v1";
+const VERSION = "v2"; // bump to drop old cached icons/pages (v2: Star-home logo)
 const STATIC = `cig-static-${VERSION}`;
 const PAGES = `cig-pages-${VERSION}`;
 const IMAGES = `cig-images-${VERSION}`;

@@ -75,7 +75,7 @@ export function ConsoleShell({ area, children }: { area: "admin" | "manager"; ch
       {/* Sidebar (desktop) */}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col bg-navy-900 text-white md:flex print:hidden">
         <div className="flex items-center gap-2.5 px-5 py-5">
-          <LogoMark />
+          <LogoMark variant="orange" />
           <div className="leading-tight">
             <p className="font-display text-[15px] font-black">
               China<span className="text-brand-orange">-in-</span>Ghana
@@ -116,7 +116,7 @@ export function ConsoleShell({ area, children }: { area: "admin" | "manager"; ch
       {/* Top bar (mobile) */}
       <header className="sticky top-0 z-30 flex items-center justify-between bg-navy-900 px-4 py-3 text-white md:hidden print:hidden">
         <div className="flex items-center gap-2.5">
-          <LogoMark className="size-8" />
+          <LogoMark className="size-8" variant="orange" />
           <div className="leading-tight">
             <p className="font-display text-sm font-black">China-in-Ghana</p>
             <p className="text-[11px] text-navy-200">{subtitle}</p>
