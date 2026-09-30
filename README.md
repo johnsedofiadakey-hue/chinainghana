@@ -62,10 +62,18 @@ All stock and money changes go through Cloud Functions, which write a stock ledg
 Firebase project: **`china-in-ghana`** (already set in `.firebaserc`; the emulators still use `demo-cig`).
 
 1. Upgrade the project to the Blaze plan and set a budget alert.
-2. Create the Firestore database (Firebase console → Firestore → Create database, location `europe-west1` to match the functions) and enable Storage.
+2. Firestore database (`europe-west1`), the Storage bucket and the `china-in-ghana-backups` bucket (30-day delete rule) are created.
 3. Production web config is in `apphosting.yaml` (App Hosting) and `.env.production` (local prod builds). Add the VAPID key and reCAPTCHA Enterprise key there when created.
-4. Update `functions/.env.china-in-ghana` (`SITE_URL`, `BACKUP_BUCKET`, `ENFORCE_APP_CHECK`). Create the backup bucket with a 30-day delete rule.
-5. `firebase deploy --only firestore,storage,functions`
+4. Update `functions/.env.china-in-ghana` (`SITE_URL`, `BACKUP_BUCKET`, `ENFORCE_APP_CHECK`). 
+5. First functions deploy only: grant the service-account roles Firebase needs (run as a project owner):
+   ```bash
+   gcloud projects add-iam-policy-binding china-in-ghana --member=serviceAccount:service-71237897710@gcp-sa-pubsub.iam.gserviceaccount.com --role=roles/iam.serviceAccountTokenCreator
+   gcloud projects add-iam-policy-binding china-in-ghana --member=serviceAccount:71237897710-compute@developer.gserviceaccount.com --role=roles/run.invoker
+   gcloud projects add-iam-policy-binding china-in-ghana --member=serviceAccount:71237897710-compute@developer.gserviceaccount.com --role=roles/eventarc.eventReceiver
+   gcloud projects add-iam-policy-binding china-in-ghana --member=serviceAccount:71237897710-compute@developer.gserviceaccount.com --role=roles/datastore.importExportAdmin
+   gcloud storage buckets add-iam-policy-binding gs://china-in-ghana-backups --member=serviceAccount:service-71237897710@gcp-sa-firestore.iam.gserviceaccount.com --role=roles/storage.admin
+   ```
+   Then `firebase deploy --only firestore,storage,functions`. `npx tsx scripts/init-settings.ts` creates the settings documents (safe to re-run).
 6. Firebase console → App Hosting → create a backend from the GitHub repo (`main` branch, root directory `/`). Connect the domain and register it for App Check.
 7. Grant roles to Auth users: `npx tsx scripts/grant-role.ts <uid> admin` (or `superadmin`, or `manager <branchId>`). Needs `gcloud auth application-default login`. The seed script is for the emulators only.
 
