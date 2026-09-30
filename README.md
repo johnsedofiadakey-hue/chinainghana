@@ -71,10 +71,11 @@ Firebase project: **`china-in-ghana`** (already set in `.firebaserc`; the emulat
    gcloud projects add-iam-policy-binding china-in-ghana --member=serviceAccount:71237897710-compute@developer.gserviceaccount.com --role=roles/run.invoker
    gcloud projects add-iam-policy-binding china-in-ghana --member=serviceAccount:71237897710-compute@developer.gserviceaccount.com --role=roles/eventarc.eventReceiver
    gcloud projects add-iam-policy-binding china-in-ghana --member=serviceAccount:71237897710-compute@developer.gserviceaccount.com --role=roles/datastore.importExportAdmin
+   gcloud projects add-iam-policy-binding china-in-ghana --member=serviceAccount:71237897710-compute@developer.gserviceaccount.com --role=roles/cloudbuild.builds.builder
    gcloud storage buckets add-iam-policy-binding gs://china-in-ghana-backups --member=serviceAccount:service-71237897710@gcp-sa-firestore.iam.gserviceaccount.com --role=roles/storage.admin
    ```
    Then `firebase deploy --only firestore,storage,functions`. `npx tsx scripts/init-settings.ts` creates the settings documents (safe to re-run).
-6. Firebase console → App Hosting → create a backend from the GitHub repo (`main` branch, root directory `/`). Connect the domain and register it for App Check.
+6. Website: App Hosting backend `web` in `europe-west4` → https://web--china-in-ghana.europe-west4.hosted.app. Deploy from this folder with `firebase deploy --only apphosting` (uploads skip `.env.local`). To auto-deploy on every push instead, connect the GitHub repo in Firebase console → App Hosting → web → Settings.
 7. Grant roles to Auth users: `npx tsx scripts/grant-role.ts <uid> admin` (or `superadmin`, or `manager <branchId>`). Needs `gcloud auth application-default login`. The seed script is for the emulators only.
 
 ## Checks
