@@ -109,6 +109,20 @@ export const api = {
     { created: number; updated: number; stockChanged: number; errors: { code: string; message: string }[] }
   >("importProducts"),
 
+  setShopStatus: callable<{ open: boolean; message?: string; reopensAt?: string; showContacts?: boolean }, { ok: true }>("setShopStatus"),
+
+  setCapacity: callable<
+    {
+      action: "save" | "lock" | "unlock" | "check";
+      enabled?: boolean;
+      dailyLimit?: number;
+      lockAtPercent?: number;
+      afterLock?: "manual" | "auto";
+      reason?: string;
+    },
+    { ok: true; reads?: number; limit?: number; locked?: boolean; since?: string }
+  >("setCapacity"),
+
   setPushToken: callable<{ token: string; enabled: boolean }, { ok: true }>("setPushToken"),
 };
 

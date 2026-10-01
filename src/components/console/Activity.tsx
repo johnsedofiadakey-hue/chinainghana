@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { collection, limit, orderBy, query, where } from "firebase/firestore";
-import { Ban, Boxes, Building2, History, KeyRound, Receipt, ShoppingCart, Users } from "lucide-react";
+import { Ban, Boxes, Building2, History, KeyRound, Lock, LockOpen, Receipt, ShoppingCart, Users } from "lucide-react";
 import { Card, EmptyState, PageHeader, Spinner } from "@/components/ui/misc";
 import { db } from "@/lib/firebase";
 import { cn, dateTime, ghs, toDate } from "@/lib/format";
@@ -21,6 +21,11 @@ const ACTIONS: Record<string, { label: string; icon: Icon; tone?: "alert" | "fre
   "order.complete": { label: "Completed an order", icon: ShoppingCart, tone: "fresh" },
   "sale.record": { label: "Recorded a walk-in sale", icon: Receipt, tone: "fresh" },
   "sale.void": { label: "Voided a sale", icon: Ban, tone: "alert" },
+  "shop.close": { label: "Closed the shop to customers", icon: Lock, tone: "alert" },
+  "shop.open": { label: "Reopened the shop", icon: LockOpen, tone: "fresh" },
+  "capacity.lock": { label: "Paused the shop (capacity)", icon: Lock, tone: "alert" },
+  "capacity.unlock": { label: "Lifted the capacity pause", icon: LockOpen, tone: "fresh" },
+  "capacity.settings": { label: "Changed capacity settings", icon: History },
   "stock.receive": { label: "Received stock", icon: Boxes },
   "stock.adjust": { label: "Corrected stock", icon: Boxes },
   "stock.count": { label: "Stock take", icon: Boxes },

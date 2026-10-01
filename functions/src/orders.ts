@@ -25,6 +25,7 @@ import {
   CALLABLE,
 } from "./shared";
 import { receiptText } from "./sales";
+import { assertShopOpen } from "./shop";
 
 const RATE_WINDOW_MS = 15 * 60 * 1000;
 const RATE_MAX_ORDERS = 5;
@@ -78,6 +79,7 @@ function orderMessage(args: {
 // Turned on at launch (ENFORCE_APP_CHECK=true in functions/.env) once the web app sends App Check tokens.
 export const placeOrder = onCall({ ...CALLABLE, enforceAppCheck: process.env.ENFORCE_APP_CHECK === "true" }, async (req) => {
   const input = parse(placeOrderSchema, req.data);
+  await assertShopOpen();
 
   // Merge duplicate lines (same product + unit).
   const merged = new Map<string, { productId: string; unit: "box" | "piece"; qty: number }>();

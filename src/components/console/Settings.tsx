@@ -12,6 +12,7 @@ import { toast } from "@/components/ui/toast";
 import { errorMessage } from "@/lib/api";
 import { db } from "@/lib/firebase";
 import { useCategories, useSettings } from "./data";
+import { ShopStatusCard } from "./ShopControls";
 
 export function SettingsPanel() {
   const settings = useSettings();
@@ -55,6 +56,8 @@ export function SettingsPanel() {
   return (
     <div>
       <PageHeader title="Settings" description="Shop-wide settings for every branch." />
+
+      <ShopStatusCard />
 
       {/* On phones these pages aren't in the bottom bar. */}
       <Card className="mb-4 overflow-hidden md:hidden">

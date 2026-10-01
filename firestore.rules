@@ -45,6 +45,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Shop switch and capacity lock: public so the shop can check them; written only by functions.
+    match /settings/shop {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /settings/capacity {
+      allow read: if true;
+      allow write: if false;
+    }
+
     match /settings/license {
       allow read: if isAdmin();
       allow write: if isSuper();

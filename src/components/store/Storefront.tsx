@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { collection, query, where } from "firebase/firestore";
-import { ChevronDown, Flame, Gift, Info, Lock, MapPin, PackageSearch, Search, ShoppingBag, X } from "lucide-react";
+import { ChevronDown, EyeOff, Flame, Gift, Info, Lock, MapPin, PackageSearch, Search, ShoppingBag, X } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Badge, EmptyState, Spinner } from "@/components/ui/misc";
@@ -13,12 +14,14 @@ import { availability, boxWord, cn, ghs, isSingle, priceSuffix, stockLabel } fro
 import { giftStatus } from "@/lib/gift";
 import { distanceKm, formatKm, getDevicePosition, type LatLng } from "@/lib/geo";
 import { useDocData, useLocalState, useQueryData } from "@/lib/hooks";
+import { useShopGate } from "@/lib/shop";
 import type { AppSettings, Branch, Category, Product } from "@/lib/types";
 import { cartKey, useBranchCart, useCart } from "@/store/cart";
 import { AvailabilityBadge, GiftTag, ProductImage, QtyStepper } from "./bits";
 import { BranchPicker, LocationPrompt, type BranchWithDistance, type LocateStep } from "./BranchPicker";
 import { CartSheet, useResolvedCart } from "./CartSheet";
 import { ProductSheet } from "./ProductSheet";
+import { ShopClosed } from "./ShopClosed";
 
 type LocStatus = "idle" | "ok" | "denied" | "error";
 
@@ -31,7 +34,36 @@ function readSessionPos(): LatLng | null {
   }
 }
 
+/**
+ * Checks the shop switch and capacity lock first: when customers can't shop, they get the
+ * closed screen and no products are loaded. Signed-in staff see the shop with a preview bar.
+ */
 export function Storefront({ initialSlug }: { initialSlug?: string }) {
+  const gate = useShopGate();
+  const { role, loading: authLoading } = useAuth();
+  const isStaff = role === "admin" || role === "superadmin" || role === "manager";
+
+  if (gate.loading || authLoading) return <Spinner className="min-h-dvh" />;
+  if (gate.state !== "open" && !isStaff) {
+    return <ShopClosed state={gate.state} message={gate.message} reopensAt={gate.reopensAt} showContacts={gate.showContacts} />;
+  }
+  return (
+    <>
+      {gate.state !== "open" && (
+        <div className="flex items-center justify-center gap-2 bg-alert px-4 py-2 text-center text-[13px] font-medium text-white">
+          <EyeOff className="size-4 shrink-0" />
+          {gate.state === "paused" ? "Paused for customers (capacity lock)" : "Closed to customers"} · staff preview
+          <Link href={role === "manager" ? "/manager" : "/admin/settings"} className="underline underline-offset-2">
+            Manage
+          </Link>
+        </div>
+      )}
+      <StorefrontInner initialSlug={initialSlug} />
+    </>
+  );
+}
+
+function StorefrontInner({ initialSlug }: { initialSlug?: string }) {
   const settings = useDocData<AppSettings>("settings/app").data;
   const defaultLow = settings?.defaultLowStockPieces ?? 10;
 

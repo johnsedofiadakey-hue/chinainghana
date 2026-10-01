@@ -19,6 +19,8 @@ export interface License {
   branchLimit: number;
   unlockPriceGHS: number;
   supportWhatsApp: string;
+  capacity?: Partial<CapacityConfig>;
+  capacityUsage?: { reads: number; threshold: number; windowStart?: Timestamp; checkedAt?: Timestamp };
 }
 
 export interface Branch extends WithId {
@@ -215,4 +217,29 @@ export interface AuditEntry extends WithId {
   branchId: string | null;
   details?: Record<string, unknown>;
   at?: Timestamp;
+}
+
+/** settings/shop — the admin's open/closed switch. */
+export interface ShopStatus {
+  open: boolean;
+  message?: string;
+  reopensAt?: Timestamp | null;
+  showContacts?: boolean;
+  updatedAt?: Timestamp;
+}
+
+/** settings/capacity — the developer's capacity lock. */
+export interface CapacityStatus {
+  locked: boolean;
+  reason?: string;
+  auto?: boolean;
+  at?: Timestamp;
+}
+
+/** settings/license.capacity — capacity lock settings (developer only). */
+export interface CapacityConfig {
+  enabled: boolean;
+  dailyLimit: number;
+  lockAtPercent: number;
+  afterLock: "manual" | "auto";
 }

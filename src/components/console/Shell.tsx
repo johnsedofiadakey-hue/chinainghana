@@ -28,6 +28,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { LogoMark } from "@/components/brand/logo";
 import { PushMenuItem } from "@/components/pwa/PushToggle";
 import { Modal } from "@/components/ui/modal";
+import { ShopStatusBanner } from "./ShopControls";
 import { cn } from "@/lib/format";
 import { useDocData } from "@/lib/hooks";
 import type { Branch } from "@/lib/types";
@@ -149,7 +150,10 @@ export function ConsoleShell({ area, children }: { area: "admin" | "manager"; ch
       </header>
 
       <main className="min-w-0 flex-1 px-4 pb-28 pt-5 md:px-8 md:pb-10 md:pt-8 print:p-0">
-        <div className="mx-auto max-w-6xl">{children}</div>
+        <div className="mx-auto max-w-6xl">
+          <ShopStatusBanner />
+          {children}
+        </div>
       </main>
 
       {/* Bottom tabs (mobile) */}

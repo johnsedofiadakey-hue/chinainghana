@@ -10,3 +10,4 @@ export { recordSale, voidSale } from "./sales";
 export { adjustStock } from "./stock";
 export { closeDay, importProducts, reopenDay, reviewStockTake, submitStockTake } from "./ops";
 export { nightlyBackup, onOrderCreated, onStockAlert, setPushToken } from "./notify";
+export { checkCapacity, setCapacity, setShopStatus } from "./shop";

@@ -13,6 +13,7 @@ import { displayPhone, ghs, normalizeGhanaPhone } from "@/lib/format";
 import { useDocData, useQueryData } from "@/lib/hooks";
 import type { License, StaffUser } from "@/lib/types";
 import { useAllBranches } from "./data";
+import { CapacityCard } from "./ShopControls";
 import { CredentialsDialog, tempPassword, type Credentials } from "./Managers";
 
 /** Super Admin (developer) only: branch licence, unlock contact and the Admin login. */
@@ -96,6 +97,8 @@ export function DeveloperPanel() {
         </Card>
 
         <AdminAccountCard admins={admins} />
+
+        <CapacityCard license={license} />
       </div>
     </div>
   );

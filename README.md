@@ -85,6 +85,12 @@ Firebase project: **`china-in-ghana`** (already set in `.firebaserc`; the emulat
 6. Website: App Hosting backend `web` in `europe-west4` → https://chinainghana.com (www redirects to it; the hosted.app address also still works). Deploy from this folder with `firebase deploy --only apphosting` (uploads skip `.env.local`). To auto-deploy on every push instead, connect the GitHub repo in Firebase console → App Hosting → web → Settings.
 7. Grant roles to Auth users: `npx tsx scripts/grant-role.ts <uid> admin` (or `superadmin`, or `manager <branchId>`). Needs `gcloud auth application-default login`. The seed script is for the emulators only.
 
+## Shop switch and capacity lock
+
+- **Shop switch** (Admin → Settings → Shop status): closes the shop to customers with a message and an optional reopen time. Stored in `settings/shop`, written only by `setShopStatus`. Staff keep working and see the shop with a preview bar.
+- **Capacity lock** (Developer page, or `npx tsx scripts/capacity.ts status|lock|unlock|limit <n>|percent <n>|mode manual|auto|on|off`): `checkCapacity` runs every 15 minutes, reads today's Firestore document reads from Cloud Monitoring (the free 50,000/day resets at midnight US Pacific) and pauses the shop for customers at the threshold (default 90% of 50,000). Stored in `settings/capacity`; settings and usage in `settings/license`. The functions' runtime service account needs `roles/monitoring.viewer`.
+- Both are enforced in `placeOrder`, not just hidden in the UI.
+
 ## Checks
 
 ```bash

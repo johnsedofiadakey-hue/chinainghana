@@ -324,6 +324,22 @@ export const SECTIONS: HelpSection[] = [
         link: { href: "~/stock-take", label: "Start a stock take", only: "manager" },
       },
       {
+        id: "close-shop",
+        title: "Close the shop for a while",
+        summary: "Hide the shop from customers while you update prices or stock, then reopen it.",
+        only: "admin",
+        steps: [
+          "Go to Settings. Under Shop status, write a short message for customers, for example \"Updating prices, back tomorrow at 9am\".",
+          "Optionally pick a time to reopen automatically. Leave it empty to reopen by hand.",
+          "Tap Close shop. Customers see a closed page with your message and the branches' WhatsApp numbers, and can't order.",
+          "You and the managers keep working as normal: change prices, receive stock, record walk-in sales.",
+          "Open the shop while signed in to check it: you'll see it with a red \"staff preview\" bar.",
+          "Tap Reopen now when you're ready.",
+        ],
+        tips: ["If you see a red \"paused\" banner instead, the shop has used up its free server capacity for the day. Contact your developer."],
+        link: { href: "~/settings", label: "Open Settings", only: "admin" },
+      },
+      {
         id: "inventory",
         title: "See stock at every branch",
         summary: "One screen with every product and how much each branch has.",
