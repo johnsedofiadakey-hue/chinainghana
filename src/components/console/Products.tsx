@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { addDoc, collection, doc, query, serverTimestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 import { Boxes, Copy, Eye, EyeOff, Gift, Package, Pencil, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Toggle } from "@/components/ui/field";
 import { Badge, Card, EmptyState, PageHeader, Spinner } from "@/components/ui/misc";
 import { Modal } from "@/components/ui/modal";
 import { toast } from "@/components/ui/toast";
@@ -391,10 +392,23 @@ export function ProductsPanel({ fixedBranchId }: { fixedBranchId: string | null 
   );
 }
 
+/** What "update matching products" can bring over. Stock is never copied. */
+const UPDATE_GROUPS = {
+  prices: { label: "Prices", hint: "Box and piece prices, minimum order", fields: ["boxPrice", "piecePrice", "sellByPiece", "minBoxes", "minPieces"] },
+  details: {
+    label: "Names, descriptions and photos",
+    hint: "Also category, pack size and low-stock level",
+    fields: ["name", "description", "categoryId", "imageUrl", "thumbUrl", "unitLabel", "qtyPerBox", "lowStockPieces", "searchText"],
+  },
+  promos: { label: "Promos, Hot and New tags", hint: "Free gifts and their dates", fields: ["freeGift", "tags"] },
+  visibility: { label: "Shown or hidden in the shop", hint: "Hides products the source branch hides", fields: ["visible"] },
+} as const;
+type UpdateGroup = keyof typeof UPDATE_GROUPS;
+
 /**
  * Admin: copies every product currently shown (all, or whatever the search/filters narrow it to)
  * into another branch in one go. Photos, prices and settings come along; stock starts at 0.
- * Products the target branch already has (same code) are skipped.
+ * Products the target already has (same code) are skipped, or updated with the chosen details.
  */
 function BulkCopyDialog({
   open,
@@ -428,34 +442,79 @@ function BulkCopyDialog({
     open && target ? query(collection(db, "products"), where("branchId", "==", target)) : null,
     `bulkcopy:${target}`,
   );
-  const existingCodes = useMemo(() => new Set(targetProducts.map((p) => p.code.trim().toUpperCase())), [targetProducts]);
-  const toCopy = useMemo(() => products.filter((p) => !existingCodes.has(p.code.trim().toUpperCase())), [products, existingCodes]);
-  const skipped = products.length - toCopy.length;
+  const [updateExisting, setUpdateExisting] = useState(true);
+  const [groups, setGroups] = useState<Record<UpdateGroup, boolean>>({ prices: true, details: true, promos: true, visibility: false });
+
+  const targetByCode = useMemo(() => {
+    const m = new Map<string, Product[]>();
+    for (const p of targetProducts) {
+      const k = p.code.trim().toUpperCase();
+      m.set(k, [...(m.get(k) ?? []), p]);
+    }
+    return m;
+  }, [targetProducts]);
+  const toCopy = useMemo(() => products.filter((p) => !targetByCode.has(p.code.trim().toUpperCase())), [products, targetByCode]);
+
+  // Matching products whose chosen details differ from the source.
+  const toUpdate = useMemo(() => {
+    if (!updateExisting) return [];
+    const fields = (Object.keys(groups) as UpdateGroup[]).filter((g) => groups[g]).flatMap((g) => [...UPDATE_GROUPS[g].fields]);
+    const out: { id: string; patch: Record<string, unknown> }[] = [];
+    for (const src of products) {
+      for (const dst of targetByCode.get(src.code.trim().toUpperCase()) ?? []) {
+        const patch: Record<string, unknown> = {};
+        for (const f of fields) {
+          // Changing the pack size of stocked products would change what their stock means.
+          if (f === "qtyPerBox" && dst.stockPieces > 0) continue;
+          const a = (src as unknown as Record<string, unknown>)[f] ?? null;
+          const b = (dst as unknown as Record<string, unknown>)[f] ?? null;
+          if (JSON.stringify(a) !== JSON.stringify(b)) patch[f] = a;
+        }
+        if (Object.keys(patch).length) out.push({ id: dst.id, patch });
+      }
+    }
+    return out;
+  }, [updateExisting, groups, products, targetByCode]);
+
+  const matching = products.length - toCopy.length;
+  const unchanged = updateExisting ? matching - new Set(toUpdate.map((u) => u.id)).size : matching;
+  const total = toCopy.length + toUpdate.length;
+  const anyGroup = Object.values(groups).some(Boolean);
   const targetName = branches.find((b) => b.id === target)?.name ?? "";
 
   async function copyAll() {
-    if (!target || !toCopy.length) return;
+    if (!target || !total) return;
     setBusy(true);
     setProgress(0);
     try {
+      type Write = { kind: "add"; product: Product } | { kind: "update"; id: string; patch: Record<string, unknown> };
+      const writes: Write[] = [...toCopy.map((product) => ({ kind: "add" as const, product })), ...toUpdate.map((u) => ({ kind: "update" as const, ...u }))];
       // Firestore batches hold up to 500 writes; stay well under.
-      for (let i = 0; i < toCopy.length; i += 200) {
+      for (let i = 0; i < writes.length; i += 200) {
         const batch = writeBatch(db);
-        for (const product of toCopy.slice(i, i + 200)) {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { id, branchId, stockPieces, updatedAt, ...rest } = product;
-          batch.set(doc(collection(db, "products")), {
-            ...rest,
-            branchId: target,
-            stockPieces: 0,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          });
+        for (const w of writes.slice(i, i + 200)) {
+          if (w.kind === "add") {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { id, branchId, stockPieces, updatedAt, ...rest } = w.product;
+            batch.set(doc(collection(db, "products")), {
+              ...rest,
+              branchId: target,
+              stockPieces: 0,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            });
+          } else {
+            // Stock and branch are never part of the patch.
+            batch.update(doc(db, "products", w.id), { ...w.patch, updatedAt: serverTimestamp() });
+          }
         }
         await batch.commit();
-        setProgress(Math.min(i + 200, toCopy.length));
+        setProgress(Math.min(i + 200, writes.length));
       }
-      toast.success(`${toCopy.length} product${toCopy.length === 1 ? "" : "s"} copied to ${targetName}. Stock starts at 0.`);
+      const parts = [];
+      if (toCopy.length) parts.push(`${toCopy.length} added (stock starts at 0)`);
+      if (toUpdate.length) parts.push(`${toUpdate.length} updated`);
+      toast.success(`${targetName}: ${parts.join(", ")}.`);
       onClose();
     } catch (e) {
       toast.error(errorMessage(e));
@@ -475,14 +534,20 @@ function BulkCopyDialog({
         <div className="flex items-center justify-end gap-2">
           {busy && (
             <span className="mr-auto text-[13px] text-ink-soft">
-              {progress} / {toCopy.length}
+              {progress} / {total}
             </span>
           )}
           <Button variant="secondary" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button loading={busy} disabled={!target || loading || !toCopy.length} onClick={copyAll}>
-            {target && !loading ? `Copy ${toCopy.length} product${toCopy.length === 1 ? "" : "s"}` : "Copy"}
+          <Button loading={busy} disabled={!target || loading || !total} onClick={copyAll}>
+            {!target || loading
+              ? "Copy"
+              : toUpdate.length && toCopy.length
+                ? `Add ${toCopy.length} · update ${toUpdate.length}`
+                : toUpdate.length
+                  ? `Update ${toUpdate.length} product${toUpdate.length === 1 ? "" : "s"}`
+                  : `Copy ${toCopy.length} product${toCopy.length === 1 ? "" : "s"}`}
           </Button>
         </div>
       }
@@ -492,8 +557,9 @@ function BulkCopyDialog({
           {narrowed
             ? `Copies the ${products.length} product${products.length === 1 ? "" : "s"} shown in the list right now (your search or filters). Clear them to copy everything.`
             : `Copies all ${products.length} product${products.length === 1 ? "" : "s"} from this branch.`}{" "}
-          Names, codes, photos, prices and promos come along. Stock starts at 0, and the other branch can change its own prices afterwards.
+          Names, codes, photos, prices and promos come along. Stock is never copied.
         </p>
+        <p className="text-[13px] text-ink-soft">To copy the other way, switch the branch at the top of Products first.</p>
         <fieldset className="space-y-2">
           <legend className="mb-1 text-sm font-medium text-navy-900">Copy to</legend>
           {others.map((b) => (
@@ -504,15 +570,51 @@ function BulkCopyDialog({
             </label>
           ))}
         </fieldset>
+        {target && (
+          <div className="space-y-2">
+            <Toggle
+              checked={updateExisting}
+              onChange={setUpdateExisting}
+              label={`Also update products ${targetName || "it"} already has`}
+              description="Matched by product code. Their stock stays as it is."
+            />
+            {updateExisting && (
+              <div className="space-y-1.5 rounded-xl bg-white p-3 ring-1 ring-inset ring-line">
+                <p className="text-[13px] font-medium text-navy-900">Bring over</p>
+                {(Object.keys(UPDATE_GROUPS) as UpdateGroup[]).map((g) => (
+                  <label key={g} className="flex cursor-pointer items-start gap-2.5 py-1">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 size-4 accent-navy-700"
+                      checked={groups[g]}
+                      disabled={busy}
+                      onChange={(e) => setGroups((x) => ({ ...x, [g]: e.target.checked }))}
+                    />
+                    <span>
+                      <span className="block text-sm">{UPDATE_GROUPS[g].label}</span>
+                      <span className="block text-[12px] text-ink-soft">{UPDATE_GROUPS[g].hint}</span>
+                    </span>
+                  </label>
+                ))}
+                {!anyGroup && <p className="text-[12px] text-alert-ink">Tick at least one, or turn updating off.</p>}
+              </div>
+            )}
+          </div>
+        )}
         {target && !loading && (
-          <div className="rounded-xl bg-surface p-3 text-sm">
+          <div className="space-y-0.5 rounded-xl bg-surface p-3 text-sm">
             <p>
-              <span className="font-semibold text-navy-900">{toCopy.length}</span> will be copied to {targetName}.
+              <span className="font-semibold text-navy-900">{toCopy.length}</span> new product{toCopy.length === 1 ? "" : "s"} will be added to {targetName}.
             </p>
-            {skipped > 0 && (
-              <p className="mt-0.5 text-ink-soft">
-                {skipped} skipped: {targetName} already has a product with the same code.
-              </p>
+            {updateExisting ? (
+              <>
+                <p>
+                  <span className="font-semibold text-navy-900">{toUpdate.length}</span> existing product{toUpdate.length === 1 ? "" : "s"} will be updated.
+                </p>
+                {unchanged > 0 && <p className="text-ink-soft">{unchanged} already match and stay as they are.</p>}
+              </>
+            ) : (
+              matching > 0 && <p className="text-ink-soft">{matching} skipped: {targetName} already has them (same code).</p>
             )}
           </div>
         )}
