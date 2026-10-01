@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -12,6 +13,7 @@ import {
   KeyRound,
   LayoutDashboard,
   LogOut,
+  Menu,
   MoonStar,
   Package,
   Receipt,
@@ -25,6 +27,7 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LogoMark } from "@/components/brand/logo";
 import { PushMenuItem } from "@/components/pwa/PushToggle";
+import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/format";
 import { useDocData } from "@/lib/hooks";
 import type { Branch } from "@/lib/types";
@@ -41,7 +44,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart, mobile: true },
   { href: "/admin/sales", label: "Sales", icon: Receipt, mobile: true },
   { href: "/admin/products", label: "Products", icon: Package, mobile: true },
-  { href: "/admin/branches", label: "Branches", icon: Building2, mobile: true },
+  { href: "/admin/branches", label: "Branches", icon: Building2 },
   { href: "/admin/inventory", label: "Inventory", icon: Warehouse },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/stock-takes", label: "Stock takes", icon: ClipboardCheck },
@@ -57,7 +60,7 @@ const MANAGER_NAV: NavItem[] = [
   { href: "/manager/orders", label: "Orders", icon: ShoppingCart, mobile: true },
   { href: "/manager/sales", label: "Sales", icon: Receipt, mobile: true },
   { href: "/manager/products", label: "Products", icon: Package, mobile: true },
-  { href: "/manager/branch", label: "My branch", icon: Store, mobile: true },
+  { href: "/manager/branch", label: "My branch", icon: Store },
   { href: "/manager/stock-take", label: "Stock take", icon: ClipboardCheck },
   { href: "/manager/close", label: "Daily close", icon: MoonStar },
   { href: "/manager/reports", label: "Reports", icon: BarChart3 },
@@ -74,6 +77,10 @@ export function ConsoleShell({ area, children }: { area: "admin" | "manager"; ch
   const nav = area === "admin" ? [...ADMIN_NAV, ...(role === "superadmin" ? SUPER_NAV : [])] : MANAGER_NAV;
   const isActive = (href: string) => (href === "/admin" || href === "/manager" ? pathname === href : pathname.startsWith(href));
   const subtitle = area === "admin" ? (role === "superadmin" ? "Developer" : "Admin · All branches") : `Manager · ${branch?.name ?? "…"}`;
+  const [moreOpen, setMoreOpen] = useState(false);
+  const tabs = nav.filter((n) => n.mobile);
+  const more = nav.filter((n) => !n.mobile);
+  const onMorePage = more.some((n) => isActive(n.href));
 
   return (
     <div className="min-h-dvh md:flex">
@@ -135,15 +142,6 @@ export function ConsoleShell({ area, children }: { area: "admin" | "manager"; ch
           >
             <CircleHelp className="size-5" />
           </Link>
-          {area === "admin" && (
-            <Link
-              href="/admin/settings"
-              aria-label="More"
-              className="inline-flex size-10 items-center justify-center rounded-xl hover:bg-white/10"
-            >
-              <Settings className="size-5" />
-            </Link>
-          )}
           <button type="button" onClick={signOut} aria-label="Sign out" className="inline-flex size-10 items-center justify-center rounded-xl hover:bg-white/10">
             <LogOut className="size-5" />
           </button>
@@ -157,25 +155,67 @@ export function ConsoleShell({ area, children }: { area: "admin" | "manager"; ch
       {/* Bottom tabs (mobile) */}
       <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white md:hidden print:hidden" aria-label="Main">
         <div className="mx-auto flex max-w-lg">
-          {nav
-            .filter((n) => n.mobile)
-            .map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium",
-                  isActive(item.href) ? "text-navy-700" : "text-ink-soft",
-                )}
-              >
-                <span className={cn("flex h-7 w-12 items-center justify-center rounded-full", isActive(item.href) && "bg-navy-50")}>
-                  <item.icon className={cn("size-5", isActive(item.href) && "text-brand-orange")} />
-                </span>
-                {item.label}
-              </Link>
-            ))}
+          {tabs.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium",
+                isActive(item.href) ? "text-navy-700" : "text-ink-soft",
+              )}
+            >
+              <span className={cn("flex h-7 w-12 items-center justify-center rounded-full", isActive(item.href) && "bg-navy-50")}>
+                <item.icon className={cn("size-5", isActive(item.href) && "text-brand-orange")} />
+              </span>
+              {item.label}
+            </Link>
+          ))}
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={moreOpen}
+            className={cn("flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium", onMorePage || moreOpen ? "text-navy-700" : "text-ink-soft")}
+          >
+            <span className={cn("flex h-7 w-12 items-center justify-center rounded-full", (onMorePage || moreOpen) && "bg-navy-50")}>
+              <Menu className={cn("size-5", onMorePage && "text-brand-orange")} />
+            </span>
+            More
+          </button>
         </div>
       </nav>
+
+      {/* Everything that doesn't fit in the bottom bar (mobile) */}
+      <Modal open={moreOpen} onClose={() => setMoreOpen(false)} title="Menu" description={subtitle} size="sm">
+        <div className="grid grid-cols-3 gap-2">
+          {more.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMoreOpen(false)}
+              className={cn(
+                "flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-3 text-center text-[13px] font-medium ring-1 ring-inset",
+                isActive(item.href) ? "bg-navy-50 text-navy-900 ring-navy-200" : "bg-white text-navy-800 ring-line hover:bg-surface",
+              )}
+            >
+              <item.icon className={cn("size-6", isActive(item.href) ? "text-brand-orange" : "text-navy-500")} />
+              {item.label}
+            </Link>
+          ))}
+        </div>
+        <div className="mt-4 divide-y divide-line rounded-2xl ring-1 ring-inset ring-line">
+          <Link href="/" target="_blank" className="flex min-h-12 items-center gap-3 px-4 text-sm font-medium text-navy-800">
+            <ExternalLink className="size-4 text-navy-500" /> View shop
+          </Link>
+          <Link href="/account/password" onClick={() => setMoreOpen(false)} className="flex min-h-12 items-center gap-3 px-4 text-sm font-medium text-navy-800">
+            <KeyRound className="size-4 text-navy-500" /> Change password
+          </Link>
+          <button type="button" onClick={signOut} className="flex min-h-12 w-full items-center gap-3 px-4 text-sm font-medium text-alert-ink">
+            <LogOut className="size-4" /> Sign out
+          </button>
+        </div>
+        <p className="mt-3 truncate text-center text-[12px] text-ink-soft">Signed in as {profile?.name ?? profile?.username ?? "…"}</p>
+      </Modal>
     </div>
   );
 }
