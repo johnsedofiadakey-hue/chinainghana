@@ -17,6 +17,7 @@ import { giftStatus } from "@/lib/gift";
 import { useQueryData } from "@/lib/hooks";
 import type { Branch, Product } from "@/lib/types";
 import { BranchSelect } from "./BranchSelect";
+import { CategoriesButton } from "./Categories";
 import { useAllBranches, useCategories, useSettings } from "./data";
 import { ProductForm } from "./ProductForm";
 import { exportProducts, ImportDialog, SheetButtons } from "./ProductSheetIO";
@@ -117,6 +118,7 @@ function ProductsInner({ fixedBranchId }: { fixedBranchId: string | null }) {
           <>
             {!fixedBranchId && <BranchSelect branches={branches} value={branchId} onChange={setPicked} allowAll={false} />}
             {branchId && <SheetButtons onImport={() => setImportOpen(true)} onExport={doExport} exporting={exporting} />}
+            {!fixedBranchId && <CategoriesButton />}
             {!fixedBranchId && branches.length > 1 && (
               <Button variant="secondary" disabled={!filtered.length} onClick={() => setBulkOpen(true)}>
                 <Copy className="size-4" /> Copy to branch

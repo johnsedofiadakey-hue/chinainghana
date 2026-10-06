@@ -66,3 +66,4 @@ functions/node_modules/
 
 # claude
 .claude/settings.local.json
+firebase.alt.json

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
-import { BarChart3, ChevronRight, ClipboardCheck, History, KeyRound, MoonStar, Plus, ShieldCheck, Tag, Users, Warehouse } from "lucide-react";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { BarChart3, ChevronRight, ClipboardCheck, History, KeyRound, MoonStar, ShieldCheck, Users, Warehouse } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
@@ -11,8 +11,8 @@ import { Card, PageHeader } from "@/components/ui/misc";
 import { toast } from "@/components/ui/toast";
 import { errorMessage } from "@/lib/api";
 import { db } from "@/lib/firebase";
-import { findOrCreateCategory } from "@/lib/categories";
-import { useCategories, useSettings } from "./data";
+import { useSettings } from "./data";
+import { CategoriesCard } from "./Categories";
 import { ShopStatusCard } from "./ShopControls";
 
 export function SettingsPanel() {
@@ -120,73 +120,5 @@ export function SettingsPanel() {
         <CategoriesCard />
       </div>
     </div>
-  );
-}
-
-function CategoriesCard() {
-  const categories = useCategories();
-  const [names, setNames] = useState<Record<string, string>>({});
-  const [newName, setNewName] = useState("");
-  const [busy, setBusy] = useState<string | null>(null);
-
-  useEffect(() => setNames(Object.fromEntries(categories.map((c) => [c.id, c.name]))), [categories]);
-
-  async function rename(id: string) {
-    const name = (names[id] ?? "").trim();
-    if (name.length < 2 || name === categories.find((c) => c.id === id)?.name) return;
-    setBusy(id);
-    try {
-      await updateDoc(doc(db, "categories", id), { name });
-      toast.success("Category renamed");
-    } catch (e) {
-      toast.error(errorMessage(e));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function add() {
-    const name = newName.trim();
-    if (name.length < 2) return;
-    setBusy("__new");
-    try {
-      const res = await findOrCreateCategory(name, categories);
-      setNewName("");
-      if (res.created) toast.success(`Category "${res.name}" added`);
-      else toast.info(`"${res.name}" already exists, so nothing new was added.`);
-    } catch (e) {
-      toast.error(e instanceof Error && !("code" in e) ? e.message : errorMessage(e));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  return (
-    <Card className="p-5 lg:col-span-2">
-      <h2 className="font-display text-lg font-bold">Categories</h2>
-      <p className="mt-0.5 text-sm text-ink-soft">Shared by all branches. Customers filter by these.</p>
-      <ul className="mt-3 space-y-2">
-        {categories.map((c) => (
-          <li key={c.id} className="flex items-center gap-2">
-            <Tag className="size-4 shrink-0 text-fresh" />
-            <Input
-              className="h-10"
-              value={names[c.id] ?? ""}
-              onChange={(e) => setNames((n) => ({ ...n, [c.id]: e.target.value }))}
-              onBlur={() => rename(c.id)}
-              onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-              disabled={busy === c.id}
-              aria-label={`Category name: ${c.name}`}
-            />
-          </li>
-        ))}
-      </ul>
-      <div className="mt-3 flex gap-2 border-t border-line pt-3">
-        <Input className="h-10" value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="New category" aria-label="New category name" />
-        <Button variant="secondary" className="h-10" loading={busy === "__new"} onClick={add} disabled={newName.trim().length < 2}>
-          <Plus className="size-4" /> Add
-        </Button>
-      </div>
-    </Card>
   );
 }

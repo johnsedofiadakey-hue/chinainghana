@@ -65,10 +65,16 @@ function init() {
   storage = getStorage(app);
 
   if (useEmulators) {
-    connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
-    connectFirestoreEmulator(db, emulatorHost, 8080);
-    connectFunctionsEmulator(functions, emulatorHost, 5001);
-    connectStorageEmulator(storage, emulatorHost, 9199);
+    // Ports can be overridden so two local test setups can run side by side.
+    // (Each variable is named in full so Next.js can inline it into the browser bundle.)
+    const authPort = Number(process.env.NEXT_PUBLIC_EMULATOR_AUTH_PORT ?? 9099);
+    const firestorePort = Number(process.env.NEXT_PUBLIC_EMULATOR_FIRESTORE_PORT ?? 8080);
+    const functionsPort = Number(process.env.NEXT_PUBLIC_EMULATOR_FUNCTIONS_PORT ?? 5001);
+    const storagePort = Number(process.env.NEXT_PUBLIC_EMULATOR_STORAGE_PORT ?? 9199);
+    connectAuthEmulator(auth, `http://${emulatorHost}:${authPort}`, { disableWarnings: true });
+    connectFirestoreEmulator(db, emulatorHost, firestorePort);
+    connectFunctionsEmulator(functions, emulatorHost, functionsPort);
+    connectStorageEmulator(storage, emulatorHost, storagePort);
   }
 }
 
