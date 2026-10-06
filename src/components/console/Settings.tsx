@@ -11,6 +11,7 @@ import { Card, PageHeader } from "@/components/ui/misc";
 import { toast } from "@/components/ui/toast";
 import { errorMessage } from "@/lib/api";
 import { db } from "@/lib/firebase";
+import { findOrCreateCategory } from "@/lib/categories";
 import { useCategories, useSettings } from "./data";
 import { ShopStatusCard } from "./ShopControls";
 
@@ -147,18 +148,14 @@ function CategoriesCard() {
   async function add() {
     const name = newName.trim();
     if (name.length < 2) return;
-    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    if (categories.some((c) => c.id === id)) {
-      toast.error("That category already exists.");
-      return;
-    }
     setBusy("__new");
     try {
-      await setDoc(doc(db, "categories", id), { name, sortOrder: categories.length + 1 });
+      const res = await findOrCreateCategory(name, categories);
       setNewName("");
-      toast.success("Category added");
+      if (res.created) toast.success(`Category "${res.name}" added`);
+      else toast.info(`"${res.name}" already exists, so nothing new was added.`);
     } catch (e) {
-      toast.error(errorMessage(e));
+      toast.error(e instanceof Error && !("code" in e) ? e.message : errorMessage(e));
     } finally {
       setBusy(null);
     }

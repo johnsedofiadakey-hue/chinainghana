@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { addDoc, collection, doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { Camera, Flame, Gift, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea, Toggle } from "@/components/ui/field";
@@ -11,6 +11,7 @@ import { ProductImage } from "@/components/store/bits";
 import { api, errorMessage } from "@/lib/api";
 import { db } from "@/lib/firebase";
 import { uploadProductImage } from "@/lib/images";
+import { findOrCreateCategory } from "@/lib/categories";
 import type { Category, Product } from "@/lib/types";
 
 interface FormState {
@@ -159,9 +160,9 @@ export function ProductForm({
     try {
       let categoryId: string | null = f.categoryId || null;
       if (f.categoryId === "__new") {
-        const id = f.newCategory.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-        await setDoc(doc(db, "categories", id), { name: f.newCategory.trim(), sortOrder: categories.length + 1 }, { merge: true });
-        categoryId = id;
+        const res = await findOrCreateCategory(f.newCategory, categories);
+        categoryId = res.id;
+        if (!res.created) toast.info(`Used the existing category "${res.name}".`);
       }
       const data = {
         name: f.name.trim(),
@@ -201,7 +202,7 @@ export function ProductForm({
       }
       onClose();
     } catch (e) {
-      toast.error(errorMessage(e));
+      toast.error(e instanceof Error && !("code" in e) ? e.message : errorMessage(e));
     } finally {
       setBusy(false);
     }
