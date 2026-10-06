@@ -10,14 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Badge, EmptyState, Spinner } from "@/components/ui/misc";
 import { toast } from "@/components/ui/toast";
 import { db } from "@/lib/firebase";
-import { availability, boxWord, cn, ghs, isSingle, priceSuffix, stockLabel } from "@/lib/format";
+import { availability, boxWord, cn, ghs, isSingle, stockLabel } from "@/lib/format";
 import { giftStatus } from "@/lib/gift";
 import { distanceKm, formatKm, getDevicePosition, type LatLng } from "@/lib/geo";
 import { useDocData, useLocalState, useQueryData } from "@/lib/hooks";
 import { useShopGate } from "@/lib/shop";
 import type { AppSettings, Branch, Category, Product } from "@/lib/types";
 import { cartKey, useBranchCart, useCart } from "@/store/cart";
-import { AvailabilityBadge, GiftTag, ProductImage, QtyStepper } from "./bits";
+import { AvailabilityBadge, CardPrices, GiftTag, hasRetail, ProductImage, QtyStepper } from "./bits";
 import { BranchPicker, LocationPrompt, type BranchWithDistance, type LocateStep } from "./BranchPicker";
 import { CartSheet, useResolvedCart } from "./CartSheet";
 import { ProductSheet } from "./ProductSheet";
@@ -479,6 +479,9 @@ function ProductCard({
   const pieceQty = cart[cartKey(p.id, "piece")]?.qty ?? 0;
   const maxBoxes = Math.max(0, Math.floor((p.stockPieces - pieceQty) / Math.max(p.qtyPerBox, 1)));
   const minBoxes = p.minBoxes || 1;
+  const retail = hasRetail(p);
+  const minPieces = p.minPieces || 1;
+  const maxPieces = Math.max(0, p.stockPieces - boxQty * Math.max(p.qtyPerBox, 1));
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-[var(--radius-card)] bg-white shadow-[var(--shadow-card)] ring-1 ring-line/60">
@@ -511,40 +514,49 @@ function ProductCard({
           <AvailabilityBadge value={avail} lowCount={avail === "low" ? stockLabel(p.stockPieces, p.qtyPerBox, p.unitLabel) : undefined} />
         </div>
         <div className="mt-auto pt-3">
-          <p className="font-display text-lg font-black leading-none text-brand-orange-dark">
-            {ghs(p.boxPrice)}
-            <span className="ml-1 font-sans text-[12px] font-normal text-ink-soft">{priceSuffix(p.qtyPerBox)}</span>
-          </p>
-          {p.sellByPiece && p.piecePrice != null && (
-            <p className="mt-0.5 text-[12px] text-ink-soft">
-              or {ghs(p.piecePrice)} / {p.unitLabel}
-            </p>
-          )}
+          <CardPrices p={p} />
           <div className="mt-2.5">
             {avail === "out" ? (
               <Button size="sm" variant="secondary" block onClick={onOpen}>
                 Check other branches
               </Button>
+            ) : retail ? (
+              <>
+                {/* Retail first: single pieces. */}
+                {pieceQty > 0 ? (
+                  <div className="flex justify-center">
+                    <QtyStepper size="sm" label={`${p.unitLabel}s of ${p.name}`} value={pieceQty} min={minPieces} max={maxPieces} onChange={(v) => setQty(branchId, p.id, "piece", v)} />
+                  </div>
+                ) : (
+                  <Button size="sm" variant="cta" block disabled={maxPieces < minPieces} onClick={() => setQty(branchId, p.id, "piece", minPieces)}>
+                    Add {minPieces > 1 ? `${minPieces} ${p.unitLabel}s` : `1 ${p.unitLabel}`}
+                  </Button>
+                )}
+                {/* Wholesale: whole boxes. */}
+                {boxQty > 0 ? (
+                  <button type="button" onClick={onOpen} className="mt-1.5 block min-h-8 w-full text-center text-[12px] font-medium text-navy-600 hover:underline">
+                    + {boxQty} {boxQty === 1 ? "box" : "boxes"} (wholesale) in order
+                  </button>
+                ) : (
+                  maxBoxes >= minBoxes && (
+                    <button
+                      type="button"
+                      onClick={() => setQty(branchId, p.id, "box", minBoxes)}
+                      className="mt-1.5 block min-h-8 w-full text-center text-[12px] font-medium text-navy-600 hover:underline"
+                    >
+                      Buy a box of {p.qtyPerBox}
+                    </button>
+                  )
+                )}
+              </>
             ) : boxQty > 0 ? (
               <div className="flex justify-center">
                 <QtyStepper size="sm" label={`${isSingle(p.qtyPerBox) ? "Quantity" : "Boxes"} of ${p.name}`} value={boxQty} min={minBoxes} max={maxBoxes} onChange={(v) => setQty(branchId, p.id, "box", v)} />
               </div>
             ) : (
-              <Button
-                size="sm"
-                variant="cta"
-                block
-                disabled={maxBoxes < minBoxes && !p.sellByPiece}
-                onClick={() => (maxBoxes >= minBoxes ? setQty(branchId, p.id, "box", minBoxes) : onOpen())}
-              >
-                {maxBoxes >= minBoxes ? (isSingle(p.qtyPerBox) ? "Add to order" : `Add ${boxWord(p.qtyPerBox, p.unitLabel)}`) : "Buy pieces"}
+              <Button size="sm" variant="cta" block disabled={maxBoxes < minBoxes} onClick={() => setQty(branchId, p.id, "box", minBoxes)}>
+                {isSingle(p.qtyPerBox) ? "Add to order" : `Add ${boxWord(p.qtyPerBox, p.unitLabel)}`}
               </Button>
-            )}
-            {pieceQty > 0 && (
-              <p className="mt-1.5 text-center text-[12px] text-navy-600">
-                + {pieceQty} {p.unitLabel}
-                {pieceQty === 1 ? "" : "s"} in order
-              </p>
             )}
           </div>
         </div>

@@ -105,3 +105,17 @@ export function lineQty(l: { unit: "box" | "piece"; qty: number; pieces: number;
   if (single) return `${l.qty} ${l.unitLabel}${l.qty === 1 ? "" : "s"}`;
   return `${l.qty} ${l.qty === 1 ? "box" : "boxes"}`;
 }
+
+/** Price per piece when bought by the box (wholesale), rounded to the pesewa. */
+export function wholesaleEach(p: { boxPrice: number; qtyPerBox: number }): number {
+  return Math.round((p.boxPrice / Math.max(p.qtyPerBox, 1)) * 100) / 100;
+}
+
+/** Whole-number % saved per piece by buying the box instead of single pieces, or 0. */
+export function wholesaleSaving(p: { boxPrice: number; qtyPerBox: number; piecePrice: number | null }): number {
+  if (p.piecePrice == null || p.piecePrice <= 0) return 0;
+  // A box priced at or below one piece is a data-entry mistake; don't advertise a huge "saving".
+  if (p.boxPrice <= p.piecePrice) return 0;
+  const pct = Math.round(((p.piecePrice - wholesaleEach(p)) / p.piecePrice) * 100);
+  return pct > 0 ? pct : 0;
+}

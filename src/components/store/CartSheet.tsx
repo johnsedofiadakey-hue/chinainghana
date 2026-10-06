@@ -175,7 +175,7 @@ export function CartSheet({
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-navy-900">{p.name}</p>
                       <p className="text-[12px] text-ink-soft">
-                        {p.code} · {ghs(l.unitPrice)} {l.unit === "piece" ? `/ ${p.unitLabel}` : isSingle(p.qtyPerBox) ? "each" : `/ box of ${p.qtyPerBox}`}
+                        {p.code} · {ghs(l.unitPrice)} {l.unit === "piece" ? `/ ${p.unitLabel} (retail)` : isSingle(p.qtyPerBox) ? "each" : `/ box of ${p.qtyPerBox} (wholesale)`}
                       </p>
                     </div>
                     <button

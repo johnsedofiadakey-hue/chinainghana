@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Gift, ImageOff, Minus, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/misc";
-import { type Availability } from "@/lib/format";
+import { ghs, isSingle, wholesaleEach, wholesaleSaving, type Availability } from "@/lib/format";
 import { giftDates, giftStatus } from "@/lib/gift";
-import type { FreeGift } from "@/lib/types";
+import type { FreeGift, Product } from "@/lib/types";
 import { cn } from "@/lib/format";
 
 export function ProductImage({
@@ -124,7 +124,7 @@ export function UnitToggle({
 }) {
   return (
     <div className="inline-flex rounded-xl bg-navy-50 p-1 text-sm" role="radiogroup" aria-label="Buy by">
-      {(["box", "piece"] as const).map((u) => (
+      {(["piece", "box"] as const).map((u) => (
         <button
           key={u}
           type="button"
@@ -136,7 +136,7 @@ export function UnitToggle({
             value === u ? "bg-white text-navy-900 shadow-sm" : "text-ink-soft hover:text-navy-900",
           )}
         >
-          {u === "box" ? `Box of ${qtyPerBox}` : `Per ${unitLabel}`}
+          {u === "box" ? `Wholesale · box of ${qtyPerBox}` : `Retail · 1 ${unitLabel}`}
         </button>
       ))}
     </div>
@@ -186,6 +186,53 @@ export function GiftPanel({ gift, perWhat }: { gift: FreeGift | null | undefined
           {status === "active" ? `1 free with every ${perWhat}` : "Promo starts soon"}
           {dates ? ` · ${dates}` : ""}
         </p>
+      </div>
+    </div>
+  );
+}
+
+/** Product has a retail (single-piece) price as well as the wholesale box price. */
+export function hasRetail(p: Pick<Product, "sellByPiece" | "piecePrice" | "qtyPerBox">): boolean {
+  return p.sellByPiece && p.piecePrice != null && !isSingle(p.qtyPerBox);
+}
+
+/**
+ * Prices for a product card: retail (one piece) big and first, wholesale (a box) smaller
+ * and clearly labelled with what it works out to per piece.
+ */
+export function CardPrices({ p }: { p: Product }) {
+  if (isSingle(p.qtyPerBox)) {
+    return (
+      <p className="font-display text-lg font-black leading-none text-brand-orange-dark">
+        {ghs(p.boxPrice)}
+        <span className="ml-1 font-sans text-[12px] font-normal text-ink-soft">each</span>
+      </p>
+    );
+  }
+  const wholesale = (
+    <>
+      <p className="text-[10px] font-bold uppercase leading-tight tracking-wide text-navy-600">Wholesale · box of {p.qtyPerBox}</p>
+      <p className="mt-0.5 text-[14px] font-bold leading-tight text-navy-900">{ghs(p.boxPrice)}</p>
+      <p className="text-[11px] leading-tight text-ink-soft">≈{ghs(wholesaleEach(p))} per {p.unitLabel}</p>
+    </>
+  );
+  if (!hasRetail(p)) {
+    return (
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wide text-brand-orange-dark">Wholesale · box of {p.qtyPerBox}</p>
+        <p className="font-display text-lg font-black leading-none text-brand-orange-dark">{ghs(p.boxPrice)}</p>
+        <p className="mt-0.5 text-[11px] text-ink-soft">Sold by the box only · ≈{ghs(wholesaleEach(p))} each</p>
+      </div>
+    );
+  }
+  const save = wholesaleSaving(p);
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-wide text-brand-orange-dark">Retail · 1 {p.unitLabel}</p>
+      <p className="font-display text-xl font-black leading-none text-brand-orange-dark">{ghs(p.piecePrice)}</p>
+      <div className="mt-2 rounded-lg bg-navy-50 px-2 py-1.5">
+        {wholesale}
+        {save > 0 && <p className="text-[11px] font-semibold text-fresh-ink">Save {save}% per {p.unitLabel}</p>}
       </div>
     </div>
   );

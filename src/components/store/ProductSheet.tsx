@@ -8,12 +8,12 @@ import { Badge } from "@/components/ui/misc";
 import { Modal } from "@/components/ui/modal";
 import { toast } from "@/components/ui/toast";
 import { db } from "@/lib/firebase";
-import { availability, boxWord, ghs, isSingle, priceSuffix, stockLabel } from "@/lib/format";
+import { availability, boxWord, ghs, isSingle, priceSuffix, stockLabel, wholesaleEach, wholesaleSaving } from "@/lib/format";
 import { giftStatus } from "@/lib/gift";
 import { distanceKm, formatKm, type LatLng } from "@/lib/geo";
 import type { Branch, Product, Unit } from "@/lib/types";
 import { useBranchCart, useCart, cartKey } from "@/store/cart";
-import { AvailabilityBadge, GiftPanel, ProductImage, QtyStepper, UnitToggle } from "./bits";
+import { AvailabilityBadge, GiftPanel, hasRetail, ProductImage, QtyStepper, UnitToggle } from "./bits";
 
 async function fetchImageFile(url: string, name: string): Promise<File> {
   const res = await fetch(url);
@@ -46,8 +46,8 @@ export function ProductSheet({
 
   useEffect(() => {
     if (!product) return;
-    const inCart = cart[cartKey(product.id, "piece")] && !cart[cartKey(product.id, "box")];
-    setUnit(inCart ? "piece" : "box");
+    const boxesInCart = !!cart[cartKey(product.id, "box")] && !cart[cartKey(product.id, "piece")];
+    setUnit(hasRetail(product) && !boxesInCart ? "piece" : "box");
     setOthers(null);
     let cancelled = false;
     getDocs(query(collection(db, "products"), where("code", "==", product.code), where("visible", "==", true)))
@@ -179,36 +179,46 @@ export function ProductSheet({
                 {ghs(product.boxPrice)} <span className="font-sans text-sm font-normal text-ink-soft">each</span>
               </p>
             </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-2xl bg-brand-orange-soft p-3">
-                <p className="text-[12px] font-medium text-brand-orange-dark">Box price</p>
-                <p className="font-display text-xl font-black text-navy-900">{ghs(product.boxPrice)}</p>
+          ) : hasRetail(product) ? (
+            <div className="space-y-2">
+              <div className="rounded-2xl bg-brand-orange-soft p-4">
+                <p className="text-[12px] font-bold uppercase tracking-wide text-brand-orange-dark">Retail price · 1 {product.unitLabel}</p>
+                <p className="font-display text-3xl font-black text-brand-orange-dark">{ghs(product.piecePrice)}</p>
                 <p className="text-[12px] text-ink-soft">
-                  ≈ {ghs(Math.round((product.boxPrice / Math.max(product.qtyPerBox, 1)) * 100) / 100)} / {product.unitLabel}
+                  Buy single {product.unitLabel}s{(product.minPieces || 1) > 1 ? ` · min. ${product.minPieces}` : ""}
                 </p>
               </div>
-              {product.sellByPiece && product.piecePrice != null ? (
-                <div className="rounded-2xl bg-navy-50 p-3">
-                  <p className="text-[12px] font-medium text-navy-600">Per {product.unitLabel}</p>
-                  <p className="font-display text-xl font-black text-navy-900">{ghs(product.piecePrice)}</p>
+              <div className="flex items-center justify-between gap-3 rounded-2xl bg-navy-50 p-3">
+                <div>
+                  <p className="text-[12px] font-bold uppercase tracking-wide text-navy-600">Wholesale price · box of {product.qtyPerBox}</p>
+                  <p className="font-display text-lg font-bold text-navy-900">{ghs(product.boxPrice)}</p>
                   <p className="text-[12px] text-ink-soft">
-                    Min. {product.minPieces || 1} {product.unitLabel}s
+                    Works out to ≈{ghs(wholesaleEach(product))} per {product.unitLabel}
                   </p>
                 </div>
-              ) : (
-                <div className="rounded-2xl bg-navy-50 p-3">
-                  <p className="text-[12px] font-medium text-navy-600">Sold by</p>
-                  <p className="font-display text-lg font-bold text-navy-900">Box only</p>
-                  <p className="text-[12px] text-ink-soft">Min. {product.minBoxes || 1} box</p>
-                </div>
-              )}
+                {wholesaleSaving(product) > 0 && (
+                  <span className="shrink-0 rounded-xl bg-fresh-soft px-2.5 py-1.5 text-center text-[12px] font-bold leading-tight text-fresh-ink">
+                    Save
+                    <br />
+                    {wholesaleSaving(product)}%
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-brand-orange-soft p-4">
+              <p className="text-[12px] font-bold uppercase tracking-wide text-brand-orange-dark">Wholesale price · box of {product.qtyPerBox}</p>
+              <p className="font-display text-3xl font-black text-brand-orange-dark">{ghs(product.boxPrice)}</p>
+              <p className="text-[12px] text-ink-soft">
+                Sold by the box only · ≈{ghs(wholesaleEach(product))} per {product.unitLabel}
+                {(product.minBoxes || 1) > 1 ? ` · min. ${product.minBoxes} boxes` : ""}
+              </p>
             </div>
           )}
 
           {avail !== "out" ? (
             <div className="space-y-3 rounded-2xl bg-surface p-3 ring-1 ring-inset ring-line">
-              {product.sellByPiece && product.piecePrice != null && (
+              {hasRetail(product) && (
                 <UnitToggle value={unit} onChange={setUnit} qtyPerBox={product.qtyPerBox} unitLabel={product.unitLabel} />
               )}
               <div className="flex items-center justify-between gap-3">
@@ -229,7 +239,9 @@ export function ProductSheet({
                   <ShoppingBag className="size-4" />
                   {unit === "box" && isSingle(product.qtyPerBox) && min === 1
                     ? "Add to order"
-                    : `Add ${min > 1 ? `${min} ` : ""}${unit === "box" ? boxWord(product.qtyPerBox, product.unitLabel, min) : `${product.unitLabel}s`} to order`}
+                    : unit === "box"
+                      ? `Add ${min > 1 ? `${min} ` : ""}${boxWord(product.qtyPerBox, product.unitLabel, min)} to order`
+                      : `Add ${min} ${product.unitLabel}${min > 1 ? "s" : ""} to order`}
                 </Button>
               ) : (
                 <Button block variant="primary" onClick={onClose}>
